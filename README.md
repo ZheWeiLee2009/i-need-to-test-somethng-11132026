@@ -1,3 +1,20 @@
+> [!NOTE]
+> This is based on 12.0.0 from FIRST-Tech-Challenge/FtcRobotController.
+> We have added some files on top of the original files that should be streamlining our system.
+> I might be updating this from time to time.
+> We will update the file once the new season starts.
+>
+> *From The TechnoWizards*
+
+> [!IMPORTANT]
+> To USE this tempalte, take a look at [template-sync guide](./template-sync.md)
+
+> [!WARNING]
+> To UPDATE this template, follow the same guide: [template-sync guide](./template-sync.md). This is using template is [Solvers-Quickstart](https://github.com/FTC-23511/SolversLib-Quickstart)
+>
+> *Please do not do this without understanding git merges, resolving conflicts. Only do this if you know what you are doing.*
+
+
 ## NOTICE
 
 This repository contains the public FTC SDK for the BIOBUZZ (2026-2027) competition season.
