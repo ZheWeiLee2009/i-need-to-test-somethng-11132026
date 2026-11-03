@@ -20,6 +20,7 @@ import com.seattlesolvers.solverslib.geometry.Vector2d;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
 import java.util.List;
 
@@ -356,5 +357,6 @@ public class DriveSubSystem extends Subsystem {
     public void setup() {
         setZeroPowerBehavior(driveMotors, DcMotor.ZeroPowerBehavior.BRAKE);
         setMotorsMode(driveMotors, DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+        setActive(true);
     }
 }

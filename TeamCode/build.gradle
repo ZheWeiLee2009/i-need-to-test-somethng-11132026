@@ -59,8 +59,8 @@ dependencies {
 //    implementation "com.acmerobotics.dashboard:dashboard:0.5.1" // FTC Dashboard DO NOT USE SLOTH WILL BREAK AND PEDRO WILL BREAK
 
     // Pedro Pathing
-    implementation 'com.pedropathing:revhub:3.0.1'
-    implementation 'com.pedropathing:tuning:1.0.1' // AutoTune (see Tuning.java)
+    implementation 'com.pedropathing:revhub:3.0.2'
+    implementation 'com.pedropathing:tuning:1.0.2' // AutoTune (see Tuning.java)
 
     // Panels
     implementation("com.bylazar.sloth:fullpanels:0.3.2+1.0.13")

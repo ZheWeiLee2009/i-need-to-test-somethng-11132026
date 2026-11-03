@@ -26,7 +26,7 @@ import java.util.List;
  *
  * DO MODIFY THIS
  */
-public class PracticeBot {
+public class  PracticeBot {
 
     private final List<LynxModule> allHubs;
 

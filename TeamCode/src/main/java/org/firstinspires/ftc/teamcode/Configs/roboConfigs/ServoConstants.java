@@ -47,11 +47,27 @@ public final class ServoConstants {
     private ServoConstants() { }
 
     public static final class Turret {
-        public static final String[] NAMES   = { "turretLeft", "turretRight" };
-        public static final double   MIN_DEG = -80.0;
-        public static final double   MAX_DEG =  80.0;
-        public static final double[] AT_MIN  = { 0.05, 0.95 };
-        public static final double[] AT_MAX  = { 0.95, 0.05 };
+        public static final String[] NAMES   = { "turretL", "turretR" };
+        public static final double   MIN_DEG = -100.0;
+        public static final double   MAX_DEG =  100.0;
+        public static final double[] AT_MIN  = { 0, 0 };
+        public static final double[] AT_MAX  = { 1, 1 };
+    }
+
+    public static final class Gate {
+        public static final String[] NAMES   = { "gate" };
+        public static final double   MIN_DEG = -20.0;
+        public static final double   MAX_DEG =  100.0;
+        public static final double[] AT_MIN  = { 0.68 };
+        public static final double[] AT_MAX  = { 1.0 };
+    }
+
+    public static final class Flower {
+        public static final String[] NAMES   = { "flower" };
+        public static final double   MIN_DEG = -20.0;
+        public static final double   MAX_DEG =  60.0;
+        public static final double[] AT_MIN  = { 0.34 };
+        public static final double[] AT_MAX  = { 0.92 };
     }
 
     public static final class Pitch {

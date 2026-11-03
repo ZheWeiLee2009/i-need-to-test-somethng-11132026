@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.utils.testClasses;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -21,6 +22,7 @@ import org.firstinspires.ftc.teamcode.SubSystems.LauncherSubSystem;
  * <p>Runs through {@link PracticeBot}: the bot builds and sets up the launcher, and
  * {@code bot.update()} (once per loop) clears the bulk cache and ticks it while active.
  */
+@Disabled
 @Configurable
 @TeleOp(name = "Launcher Test", group = "9 - Utility")
 public class LauncherTest extends OpMode {
@@ -35,10 +37,10 @@ public class LauncherTest extends OpMode {
     public static double DISTANCE_IN = 24.0;
 
     // Default to the shipped constants so the PIDF region isn't dead (0 output) until tuned.
-    public static double kP = LauncherConstants.kP;
-    public static double kI = LauncherConstants.kI;
-    public static double kD = LauncherConstants.kD;
-    public static double kF = LauncherConstants.kF;
+    public static double kP = LauncherConstants.fwRkP;
+    public static double kI = LauncherConstants.fwRkI;
+    public static double kD = LauncherConstants.fwRkD;
+    public static double kF = LauncherConstants.fwRkF;
 
     // Bang-bang region: error > ENTER -> full power, error < EXIT -> PIDF. Keep EXIT <= ENTER.
     public static double BANG_BANG_ENTER_RPM = LauncherConstants.BANG_BANG_ENTER_RPM;
@@ -91,7 +93,7 @@ public class LauncherTest extends OpMode {
         }
         lastLoopStartNs = loopStartNs;
 
-        launcher.setPIDF(kP, kI, kD, kF);
+        launcher.setFwRPIDF(kP, kI, kD, kF);
         launcher.setBangBangThresholds(BANG_BANG_ENTER_RPM, BANG_BANG_EXIT_RPM);
 
         if (gamepad1.a && !aPressedLast) {
@@ -106,7 +108,7 @@ public class LauncherTest extends OpMode {
 
             case SPINNING_UP:
                 commandLauncher();
-                if (launcher.atTarget()) {
+                if (launcher.isFwLAtTarget()) {
                     spinUpMs = stateElapsedMs();
                     setState(State.READY);
                 }
@@ -114,14 +116,14 @@ public class LauncherTest extends OpMode {
 
             case READY:
                 commandLauncher();
-                if (!launcher.atTarget()) {
+                if (!launcher.isFwLAtTarget()) {
                     setState(State.RECOVERING);
                 }
                 break;
 
             case RECOVERING:
                 commandLauncher();
-                if (launcher.atTarget()) {
+                if (launcher.isFwLAtTarget()) {
                     recoveryMs = stateElapsedMs();
                     setState(State.READY);
                 }
@@ -132,8 +134,8 @@ public class LauncherTest extends OpMode {
         bot.update();
         botUpdateMs = (System.nanoTime() - updateStart) / 1_000_000.0;
 
-        double targetRPM = launcher.getTargetRPM();
-        double currentRPM = launcher.getCurrentRPM();
+        double targetRPM = launcher.getFwLTargetRPM();
+        double currentRPM = launcher.getFwLCurrentRPM();
 
         joined.addData("State", state.name());
         joined.addData("State Time (ms)", stateElapsedMs());
@@ -145,10 +147,10 @@ public class LauncherTest extends OpMode {
         joined.addData("Target RPM", targetRPM);
         joined.addData("Current RPM", currentRPM);
         joined.addData("RPM Error", targetRPM - currentRPM);
-        joined.addData("Controller Output", launcher.getOutput());
-        joined.addData("Mode", launcher.isBangBangActive() ? "BANG-BANG" : "PIDF");
+        joined.addData("Controller Output", launcher.getFwLOutput());
+        joined.addData("Mode", launcher.isFwLBangBangActive() ? "BANG-BANG" : "PIDF");
         joined.addData("Active", launcher.isActive());
-        joined.addData("At Target", launcher.atTarget());
+        joined.addData("At Target", launcher.isFwLAtTarget());
 
         joined.addData("kP", kP);
         joined.addData("kI", kI);

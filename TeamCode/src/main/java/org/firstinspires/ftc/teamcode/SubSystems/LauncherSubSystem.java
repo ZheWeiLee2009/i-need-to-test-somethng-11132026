@@ -1,18 +1,12 @@
 package org.firstinspires.ftc.teamcode.SubSystems;
 
-import static org.firstinspires.ftc.teamcode.Configs.roboConfigs.LauncherConstants.BANG_BANG_ENTER_RPM;
-import static org.firstinspires.ftc.teamcode.Configs.roboConfigs.LauncherConstants.BANG_BANG_EXIT_RPM;
-import static org.firstinspires.ftc.teamcode.Configs.roboConfigs.LauncherConstants.kD;
-import static org.firstinspires.ftc.teamcode.Configs.roboConfigs.LauncherConstants.kF;
-import static org.firstinspires.ftc.teamcode.Configs.roboConfigs.LauncherConstants.kI;
-import static org.firstinspires.ftc.teamcode.Configs.roboConfigs.LauncherConstants.kP;
+import static org.firstinspires.ftc.teamcode.Configs.roboConfigs.LauncherConstants.*;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.seattlesolvers.solverslib.controller.PIDFController;
 import com.seattlesolvers.solverslib.util.InterpLUT;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.utils.customMath;
 
@@ -21,15 +15,20 @@ import java.util.List;
 public class LauncherSubSystem extends Subsystem {
 
     private final DcMotorEx fwL, fwR;
-    private final InterpLUT flywheelLut = new InterpLUT();
-    private final PIDFController pidf = new PIDFController(kP, kI, kD, kF);
-
-    private double targetRPM = 0.0;
-    private double currentRPM = 0.0;
-    private double output = 0.0;
+    private final InterpLUT leftFlywheelLut = new InterpLUT();
+    private final InterpLUT rightFlywheelLut = new InterpLUT();
+    private final PIDFController fwLpidf = new PIDFController(fwLkP, fwLkI, fwLkD, fwLkF);
+    private final PIDFController fwRpidf = new PIDFController(fwRkP, fwRkI, fwRkD, fwRkF);
+    private double fwLTargetRPM = 0.0;
+    private double fwRTargetRPM = 0.0;
+    private double fwLCurrentRPM = 0.0;
+    private double fwRCurrentRPM = 0.0;
+    private double fwLOutput = 0.0;
+    private double fwROutput = 0.0;
 
     /** True while the bang-bang region is active, false while PIDF is in control. */
-    private boolean bangBangActive = true;
+    private boolean fwLBangBangActive = true;
+    private boolean fwRBangBangActive = true;
 
     /** True while the motors are held in BRAKE by stop(); off()/resume restore FLOAT. */
     private boolean braked = false;
@@ -57,16 +56,19 @@ public class LauncherSubSystem extends Subsystem {
         braked = false;
 
         // Distance (inches) -> RPM
-        flywheelLut.add(24.0, 2800.0);
-        flywheelLut.add(30.0, 2950.0);
-        flywheelLut.add(36.0, 3100.0);
-        flywheelLut.add(42.0, 3250.0);
-        flywheelLut.add(48.0, 3400.0);
-        flywheelLut.add(54.0, 3550.0);
-        flywheelLut.add(60.0, 3700.0);
-        flywheelLut.add(66.0, 3850.0);
-        flywheelLut.add(72.0, 4000.0);
-        flywheelLut.createLUT();
+        leftFlywheelLut.add(38.0, 2275.0); //right is 2200
+        leftFlywheelLut.add(40.5, 2250.0); //right is 2250
+        leftFlywheelLut.add(43.5, 2200.0); //right is 2300
+        leftFlywheelLut.add(52.0, 2225.0); //right is 2450
+        leftFlywheelLut.add(55.0, 2250.0); //right is 2450
+        leftFlywheelLut.createLUT();
+
+        rightFlywheelLut.add(38.0, 2200.0); //right is 2200
+        rightFlywheelLut.add(40.5, 2250.0); //right is 2250
+        rightFlywheelLut.add(43.5, 2300.0); //right is 2300
+        rightFlywheelLut.add(52.0, 2450.0); //right is 2450
+        rightFlywheelLut.add(55.0, 2450.0); //right is 2450
+        rightFlywheelLut.createLUT();
 
         off();
     }
@@ -79,36 +81,58 @@ public class LauncherSubSystem extends Subsystem {
      */
     @Override
     public void update() {
-        currentRPM = customMath.degPerSecToRPM(
-                (fwL.getVelocity(AngleUnit.DEGREES)
-                        + fwR.getVelocity(AngleUnit.DEGREES)) / 2.0
-        );
+//        currentRPM = customMath.degPerSecToRPM(
+//                (fwL.getVelocity(AngleUnit.DEGREES)
+//                        + fwR.getVelocity(AngleUnit.DEGREES)) / 2.0
+//        );
 
-        double error = targetRPM - currentRPM;
-        double absError = Math.abs(error);
+        fwLCurrentRPM = fwL.getVelocity() * 60/28 /* Ticks per second -> RPM*/;
+        fwRCurrentRPM = fwR.getVelocity() * 60/28 /* Ticks per second -> RPM*/;
+
+        double fwLError = fwLTargetRPM - fwLCurrentRPM;
+        double fwLAbsError = Math.abs(fwLError);
+        double fwRError = fwRTargetRPM - fwRCurrentRPM;
+        double fwRAbsError = Math.abs(fwRError);
 
         double enterRpm = Double.isNaN(enterOverrideRpm) ? BANG_BANG_ENTER_RPM : enterOverrideRpm;
         double exitRpm = Double.isNaN(exitOverrideRpm) ? BANG_BANG_EXIT_RPM : exitOverrideRpm;
 
-        if (absError > enterRpm) {
-            bangBangActive = true;
-        } else if (absError < exitRpm) {
-            bangBangActive = false;
+        if (fwLAbsError > enterRpm) {
+            fwLBangBangActive = true;
+        } else if (fwLAbsError < exitRpm) {
+            fwLBangBangActive = false;
         }
 
-        if (bangBangActive) {
+        if (fwRAbsError > enterRpm) {
+            fwRBangBangActive = true;
+        } else if (fwRAbsError < exitRpm) {
+            fwRBangBangActive = false;
+        }
+
+        if (fwLBangBangActive) {
             // Full power to spin up; coast (no reverse power) when overspeed.
-            output = error > 0.0 ? 1.0 : 0.0;
+            fwLOutput = fwLError > 0.0 ? 1.0 : 0.0;
 
             // Keep the integrator clean so PIDF starts fresh at handoff.
-            pidf.reset();
+            fwLpidf.reset();
         } else {
-            output = pidf.calculate(currentRPM, targetRPM);
-            output = Math.max(-1.0, Math.min(1.0, output));
+            fwLOutput = fwLpidf.calculate(fwLCurrentRPM, fwLTargetRPM);
+            fwLOutput = Math.max(-1.0, Math.min(1.0, fwLOutput));
         }
 
-        fwL.setPower(output);
-        fwR.setPower(output);
+        if (fwRBangBangActive) {
+            // Full power to spin up; coast (no reverse power) when overspeed.
+            fwROutput = fwRError > 0.0 ? 1.0 : 0.0;
+
+            // Keep the integrator clean so PIDF starts fresh at handoff.
+            fwRpidf.reset();
+        } else {
+            fwROutput = fwRpidf.calculate(fwRCurrentRPM, fwRTargetRPM);
+            fwROutput = Math.max(-1.0, Math.min(1.0, fwROutput));
+        }
+
+        fwL.setPower(fwLOutput);
+        fwR.setPower(fwROutput);
     }
 
     /**
@@ -154,7 +178,7 @@ public class LauncherSubSystem extends Subsystem {
         double distance = customMath.poseToTranslation(local)
                 .getDistance(customMath.poseToTranslation(target));
 
-        setTargetRPM(flywheelLut.get(distance));
+        setTargetRPM(leftFlywheelLut.get(distance), rightFlywheelLut.get(distance));
     }
 
     /**
@@ -163,8 +187,8 @@ public class LauncherSubSystem extends Subsystem {
      *
      * <p>The interpolation table is not used.
      */
-    public void setRPM(double rpm) {
-        setTargetRPM(rpm);
+    public void setRPM(double fwLRpm, double fwRRpm) {
+        setTargetRPM(fwLRpm, fwRRpm);
     }
 
     /**
@@ -174,22 +198,31 @@ public class LauncherSubSystem extends Subsystem {
      * controller restarts in bang-bang with a clean PIDF, so the next update() reads the real
      * flywheel speed and goes to the target from wherever it currently is.
      */
-    private void setTargetRPM(double rpm) {
-        if (rpm <= 0.0) {
+    private void setTargetRPM(double fwLRpm, double fwRRpm) {
+        if (fwLRpm <= 0.0) {
+            off();
+            return;
+        }
+
+        if (fwRRpm <= 0.0) {
             off();
             return;
         }
 
         if (!isActive()) {
             releaseBrake();
-            bangBangActive = true;
-            pidf.reset();
+            fwLBangBangActive = true;
+            fwRBangBangActive = true;
+            fwLpidf.reset();
+            fwRpidf.reset();
             setActive(true);
-        } else if (Math.abs(targetRPM - rpm) > 1.0) {
-            pidf.reset();
+        } else {
+            if (Math.abs(fwLTargetRPM - fwLRpm) > 1.0) fwLpidf.reset();
+            if (Math.abs(fwRTargetRPM - fwRRpm) > 1.0) fwRpidf.reset();
         }
 
-        targetRPM = rpm;
+        fwLTargetRPM = fwLRpm;
+        fwRTargetRPM = fwRRpm;
     }
 
     /**
@@ -200,16 +233,28 @@ public class LauncherSubSystem extends Subsystem {
      * @param d
      * @param f
      */
-    public void setPIDF(double p, double i, double d, double f) {
-        if (pidf.getP() == p &&
-                pidf.getI() == i &&
-                pidf.getD() == d &&
-                pidf.getF() == f) {
+    public void setFwLPIDF(double p, double i, double d, double f) {
+        if (fwLpidf.getP() == p &&
+                fwLpidf.getI() == i &&
+                fwLpidf.getD() == d &&
+                fwLpidf.getF() == f) {
             return;
         }
 
-        pidf.setPIDF(p, i, d, f);
-        pidf.reset();
+        fwLpidf.setPIDF(p, i, d, f);
+        fwLpidf.reset();
+    }
+
+    public void setFwRPIDF(double p, double i, double d, double f) {
+        if (fwRpidf.getP() == p &&
+                fwRpidf.getI() == i &&
+                fwRpidf.getD() == d &&
+                fwRpidf.getF() == f) {
+            return;
+        }
+
+        fwRpidf.setPIDF(p, i, d, f);
+        fwRpidf.reset();
     }
 
     /**
@@ -232,37 +277,61 @@ public class LauncherSubSystem extends Subsystem {
      * Returns the flywheel RPM from the last active update(). While the subsystem is off or
      * stopped the encoders are not read, so this is 0 (meaning "not measured").
      */
-    public double getCurrentRPM() {
-        return currentRPM;
+    public double getFwLCurrentRPM() {
+        return fwLCurrentRPM;
+    }
+
+    public double getFwRCurrentRPM() {
+        return fwRCurrentRPM;
     }
 
     /**
      * Returns the current target RPM (0 while off/stopped).
      */
-    public double getTargetRPM() {
-        return targetRPM;
+    public double getFwLTargetRPM() {
+        return fwLTargetRPM;
+    }
+
+    public double getFwRTargetRPM() {
+        return fwRTargetRPM;
     }
 
     /**
      * Returns the current controller output (0 while off/stopped).
      */
-    public double getOutput() {
-        return output;
+    public double getFwLOutput() {
+        return fwLOutput;
+    }
+
+    public double getFwROutput() {
+        return fwROutput;
     }
 
     /**
      * Returns true while the bang-bang region is in control (useful for telemetry).
      */
-    public boolean isBangBangActive() {
-        return bangBangActive;
+    public boolean isFwLBangBangActive() {
+        return fwLBangBangActive;
+    }
+
+    public boolean isFwRBangBangActive() {
+        return fwRBangBangActive;
     }
 
     /**
      * Returns true when the subsystem is running and the flywheel is within 50 RPM of the
      * target. Always false while off/stopped.
      */
-    public boolean atTarget() {
-        return isActive() && Math.abs(targetRPM - currentRPM) <= 50.0;
+    public boolean isFwLAtTarget() {
+        return isActive() && Math.abs(fwLTargetRPM - fwLCurrentRPM) <= 50.0;
+    }
+
+    public boolean isFwRAtTarget() {
+        return isActive() && Math.abs(fwRTargetRPM - fwRCurrentRPM) <= 50.0;
+    }
+
+    public boolean isAtTarget(){
+        return isFwLAtTarget() && isFwRAtTarget();
     }
 
     // ==========================================================
@@ -280,12 +349,18 @@ public class LauncherSubSystem extends Subsystem {
 
     /** Clears all controller state and deactivates the subsystem (no more encoder reads). */
     private void resetState() {
-        targetRPM = 0.0;
-        currentRPM = 0.0;
-        output = 0.0;
+        fwLTargetRPM = 0.0;
+        fwLCurrentRPM = 0.0;
+        fwLOutput = 0.0;
 
-        bangBangActive = true;
-        pidf.reset();
+        fwRTargetRPM = 0.0;
+        fwRCurrentRPM = 0.0;
+        fwROutput = 0.0;
+
+        fwLBangBangActive = true;
+        fwRBangBangActive = true;
+        fwLpidf.reset();
+        fwRpidf.reset();
         setActive(false);
     }
 }

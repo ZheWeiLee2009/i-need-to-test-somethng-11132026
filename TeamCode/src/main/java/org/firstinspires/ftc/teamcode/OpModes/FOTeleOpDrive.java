@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.OpModes;
 
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -23,6 +24,8 @@ import org.firstinspires.ftc.teamcode.PracticeBot;
  * gamepad1 B:           intake on
  * gamepad1 A:           intake off
  */
+
+@Disabled
 @TeleOp(name = "FO TeleOp Drive", group = ".")
 public class FOTeleOpDrive extends OpMode {
     private PracticeBot bot;

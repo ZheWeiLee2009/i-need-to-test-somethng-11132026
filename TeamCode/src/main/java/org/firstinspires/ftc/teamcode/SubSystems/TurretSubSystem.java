@@ -38,6 +38,7 @@ public class TurretSubSystem extends Subsystem {
     /** Exposed for the calibration OpMode. Not needed by normal OpModes. */
     public ServoAxis getAxis()         { return axis; }
 
+    @Override public void setup() { axis.setAngle(axis.getMaxDeg()); }
     @Override public void stop()   { axis.stop(); }
     @Override public void update() { /* no-op; add auto-aim here later */ }
 }

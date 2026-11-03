@@ -1,24 +1,27 @@
 package org.firstinspires.ftc.teamcode.utils.testClasses;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.Configs.roboConfigs.ServoConstants;
+import org.firstinspires.ftc.teamcode.LM1Robot;
 import org.firstinspires.ftc.teamcode.PracticeBot;
-import org.firstinspires.ftc.teamcode.utils.ServoAxis;
 import org.firstinspires.ftc.teamcode.utils.ServoUtility;
+import org.firstinspires.ftc.teamcode.utils.ServoAxis;
 
 
 /*
     Do not modify this in any repos other than this one without knowing how to deal with git-merge.
  */
 
+@Disabled
 @TeleOp(name = "ServoTest", group = "9 - Utility")
 public class ServoTest extends OpMode {
 
-    private PracticeBot bot;
+    private LM1Robot bot;
 
     private final ElapsedTime runtime = new ElapsedTime();
 
@@ -43,7 +46,7 @@ public class ServoTest extends OpMode {
 
     @Override
     public void init() {
-        bot = new PracticeBot(hardwareMap, runtime);
+        bot = new LM1Robot(hardwareMap, runtime, telemetry); //comment out prepareshooter()
         telemetry.setMsTransmissionInterval(100);
         telemetry.addLine("ServoTest Initialized");
         telemetry.addLine("A = next servo   B = toggle raw/angle");
@@ -194,7 +197,8 @@ public class ServoTest extends OpMode {
     // ---------------- Helpers ----------------
 
     private ServoAxis getActiveAxis() {
-        return (axisIndex == 0) ? bot.turret.getAxis() : bot.pitch.getAxis();
+//        return (axisIndex == 0) ? bot.turret.getAxis() : bot.pitch.getAxis();
+        return bot.turret.getAxis();
     }
 
     private double getActiveAxisAtMin(int idx) {

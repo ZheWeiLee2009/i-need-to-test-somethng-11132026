@@ -96,20 +96,20 @@ Example covering the core robot (drive + intake + launcher, no turret/pitch yet)
 ```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Robot type="FirstInspires-FTC">
-    <LynxUsbDevice name="Control Hub Portal" serialNumber="(embedded)" parentModuleAddress="173">
-        <LynxModule name="Control Hub" port="173">
-            <goBILDA5201SeriesMotor name="FL" port="0"/>
-            <goBILDA5201SeriesMotor name="BL" port="1"/>
-            <goBILDA5201SeriesMotor name="FR" port="2"/>
-            <goBILDA5201SeriesMotor name="BR" port="3"/>
-            <goBILDAPinpoint name="pinpoint" port="0" bus="1"/>
-        </LynxModule>
-        <LynxModule name="Expansion Hub 0" port="0">
-            <goBILDA5201SeriesMotor name="intake" port="0"/>
-            <goBILDA5201SeriesMotor name="fwL" port="1"/>
-            <goBILDA5201SeriesMotor name="fwR" port="2"/>
-        </LynxModule>
-    </LynxUsbDevice>
+   <LynxUsbDevice name="Control Hub Portal" serialNumber="(embedded)" parentModuleAddress="173">
+      <LynxModule name="Control Hub" port="173">
+         <goBILDA5201SeriesMotor name="FL" port="0"/>
+         <goBILDA5201SeriesMotor name="BL" port="1"/>
+         <goBILDA5201SeriesMotor name="FR" port="2"/>
+         <goBILDA5201SeriesMotor name="BR" port="3"/>
+         <goBILDAPinpoint name="pinpoint" port="0" bus="1"/>
+      </LynxModule>
+      <LynxModule name="Expansion Hub 0" port="0">
+         <goBILDA5201SeriesMotor name="intake" port="0"/>
+         <goBILDA5201SeriesMotor name="fwL" port="1"/>
+         <goBILDA5201SeriesMotor name="fwR" port="2"/>
+      </LynxModule>
+   </LynxUsbDevice>
 </Robot>
 ```
 
