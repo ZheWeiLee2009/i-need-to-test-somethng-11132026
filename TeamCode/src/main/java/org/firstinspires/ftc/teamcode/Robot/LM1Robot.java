@@ -24,10 +24,12 @@ import org.firstinspires.ftc.teamcode.SubSystems.Subsystem;
 import org.firstinspires.ftc.teamcode.SubSystems.TransferSubSystem;
 import org.firstinspires.ftc.teamcode.SubSystems.TurretSubSystem;
 import org.firstinspires.ftc.teamcode.utils.RayCasting;
+import org.firstinspires.ftc.teamcode.utils.TurretCalibrationStore;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Master hardware mapping and subsystem manager class for PracticeBot.
@@ -71,6 +73,8 @@ public class LM1Robot {
     public TransferSubSystem transfer;
     public LauncherSubSystem launcher;
     public TurretSubSystem turret;
+    /** Where the turret limits/calibration came from: "BLACKBOARD" or "ServoConstants". */
+    public String turretCalSource = "ServoConstants";
     public FlowerSubSystem flower;
     private final List<Subsystem> subsystems = new ArrayList<>();
 
@@ -93,7 +97,18 @@ public class LM1Robot {
 
     private Pose2D target;
 
+    /** Turret numbers come from ServoConstants only. */
     public LM1Robot(HardwareMap hwMap, ElapsedTime runtime, Telemetry telemetry) {
+        this(hwMap, runtime, telemetry, null);
+    }
+
+    /**
+     * @param blackboard the OpMode's {@code blackboard}. If a turret calibration was published to
+     *                   it (by TurretCalibrator earlier this session), the turret uses that
+     *                   instead of ServoConstants.Turret. Pass null to always use ServoConstants.
+     */
+    public LM1Robot(HardwareMap hwMap, ElapsedTime runtime, Telemetry telemetry,
+                    Map<String, Object> blackboard) {
         this.time = runtime;
         this.hwMap = hwMap;
 
@@ -166,12 +181,18 @@ public class LM1Robot {
         transfer = new TransferSubSystem(transferMotors, transferServos, transferSensors);
         launcher = new LauncherSubSystem(flywheelMotors);
 
+        // Turret numbers: blackboard (from a calibration earlier this session) if present,
+        // otherwise the permanent values in ServoConstants.Turret.
+        double[] cal = TurretCalibrationStore.get(blackboard);
+        turretCalSource = cal != null ? "BLACKBOARD" : "ServoConstants";
+        int turretServoCount = 2;
+
         turret = new TurretSubSystem(
                 new Servo[]{turretLeft, turretRight},
-                ServoConstants.Turret.MIN_DEG,
-                ServoConstants.Turret.MAX_DEG,
-                ServoConstants.Turret.AT_MIN,
-                ServoConstants.Turret.AT_MAX
+                cal != null ? cal[0] : ServoConstants.Turret.MIN_DEG,
+                cal != null ? cal[1] : ServoConstants.Turret.MAX_DEG,
+                cal != null ? TurretCalibrationStore.fill(cal[2], turretServoCount) : ServoConstants.Turret.AT_MIN,
+                cal != null ? TurretCalibrationStore.fill(cal[3], turretServoCount) : ServoConstants.Turret.AT_MAX
         );
 
         flower = new FlowerSubSystem(
@@ -367,6 +388,7 @@ public class LM1Robot {
         joined.addData("Transfer Subsystem: ", transfer.isActive());
         joined.addData("Launcher Subsystem: ", launcher.isActive());
         joined.addData("Turret Subsystem: ", turret.isActive());
+        joined.addData("Turret calibration source: ", turretCalSource);
         joined.addData("Flower Subsystem: ", flower.isActive());
         joined.addLine();
 
@@ -400,4 +422,4 @@ public class LM1Robot {
         joined.update();
     }
 
-}
+}

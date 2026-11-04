@@ -27,7 +27,7 @@ public class TeleOp extends OpMode {
 
     @Override
     public void init() {
-        bot = new LM1Robot(hardwareMap, runtime, telemetry);
+        bot = new LM1Robot(hardwareMap, runtime, telemetry, blackboard);
         bot.toggleDebug(true);
     }
 
@@ -80,4 +80,4 @@ public class TeleOp extends OpMode {
 
     @Override
     public void stop() { bot.stop(); }
-}
+}
