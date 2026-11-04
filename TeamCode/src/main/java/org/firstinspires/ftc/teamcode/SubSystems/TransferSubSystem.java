@@ -19,12 +19,13 @@ public class TransferSubSystem extends Subsystem{
     private final DcMotorEx transfer;
     public final DigitalChannel l1, l2, l3, l4, r1, r2, r3, r4;
     public ServoTaskSubsystem gate;
-    private final ElapsedTime emptyTimer, settledTimer, fullTimer;
+    private final ElapsedTime emptyTimer, settledTimer, fullTimer, timeoutTimer;
     private boolean b1 = false, b2 = false, b3 = false, b4 = false;
     private boolean read1 = false, read2 = false, read3 = false, readAll = false;
     private boolean intakeRequest = false, launchRequest = false, spitRequest = false;
     private boolean startedIntake = false, startedLaunch = false, startedSpit = false;
     private boolean transferFull = false;
+    private boolean ball1Stuck = false;
     private double gateAngle;
 
     public TransferSubSystem(List<DcMotorEx> Motors, List<Servo> Servos, List<DigitalChannel> Sensors){
@@ -49,6 +50,7 @@ public class TransferSubSystem extends Subsystem{
             emptyTimer = new ElapsedTime();
             settledTimer = new ElapsedTime();
             fullTimer = new ElapsedTime();
+            timeoutTimer = new ElapsedTime();
     }
 
     /** Initializes gate. */
@@ -141,6 +143,7 @@ public class TransferSubSystem extends Subsystem{
         if (launchRequest && !startedLaunch){
             startedLaunch(true);
             launch();
+            timeoutTimer.reset();
         }
 
         //stops once empty
@@ -150,8 +153,16 @@ public class TransferSubSystem extends Subsystem{
             } else if (emptyTimer.milliseconds() > IntakeConstants.EMPTY_TIME) {
                 resetState();
             }
-        }
 
+            if(startedLaunch && timeoutTimer.milliseconds() > 2000 && !ball1Stuck){
+                spit();
+                ball1Stuck = true;
+                timeoutTimer.reset();
+            } else if (timeoutTimer.milliseconds() > 300 && ball1Stuck){
+                ball1Stuck = false;
+                launch();
+            }
+        }
     }
 
     /** Reads intake sensors. */

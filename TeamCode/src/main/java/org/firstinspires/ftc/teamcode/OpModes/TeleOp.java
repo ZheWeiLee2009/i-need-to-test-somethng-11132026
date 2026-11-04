@@ -2,15 +2,11 @@ package org.firstinspires.ftc.teamcode.OpModes;
 
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
-import org.firstinspires.ftc.teamcode.LM1Robot;
-import org.firstinspires.ftc.teamcode.PracticeBot;
+import org.firstinspires.ftc.teamcode.Robot.LM1Robot;
 
 /**
  * Standard field-oriented TeleOp drive, with brake-mode drive motors and on-field-zone
@@ -51,6 +47,8 @@ public class TeleOp extends OpMode {
 
         if(gamepad1.bWasPressed()){ bot.startIntaking(); }
         if(gamepad1.aWasPressed()){ bot.startSpit(); }
+        if(gamepad1.xWasPressed()){ bot.switchSide(); }
+        if(gamepad1.yWasPressed()){ bot.odo.resetPosAndIMU(); }
         if(gamepad1.rightBumperWasPressed()){ bot.launch(); }
         if(gamepad1.leftBumperWasPressed()){ bot.interruptStop(); }
 
