@@ -142,7 +142,7 @@ public class LM1Robot {
         turretRight = this.hwMap.get(Servo.class, ServoConstants.Turret.NAMES[1]);
 
         odo = this.hwMap.get(GoBildaPinpointDriver.class, "pinpoint");
-        odo.setOffsets(-2.6, -5.28, DistanceUnit.INCH);
+        odo.setOffsets(-2.46, -5.32, DistanceUnit.INCH);
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odo.resetPosAndIMU();
         odo.recalibrateIMU();
