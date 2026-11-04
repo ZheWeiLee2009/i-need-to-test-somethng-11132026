@@ -43,7 +43,7 @@ public class TurretSubSystem extends Subsystem {
     public double getClipMin() { return Math.max(-CLIP_HALF_DEG, axis.getMinDeg()); }
 
     /** Largest allowed angle: +135 deg, or the axis maximum if that is tighter. */
-    public double getClipMax() { return Math.min(CLIP_HALF_DEG, axis.getMaxDeg()); }
+    public double getClipMax() { return Math.min(180, axis.getMaxDeg()); }
 
     /** Clamp an angle (deg, 0 = zero direction, + = clockwise) into the clipped range. */
     public double clipAngle(double deg) {

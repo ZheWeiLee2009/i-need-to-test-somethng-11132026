@@ -48,8 +48,8 @@ public final class ServoConstants {
 
     public static final class Turret {
         public static final String[] NAMES   = { "turretL", "turretR" };
-        public static final double   MIN_DEG = -100.0;
-        public static final double   MAX_DEG =  100.0;
+        public static final double   MIN_DEG = -153.8;
+        public static final double   MAX_DEG =  195.5;
         public static final double[] AT_MIN  = { 0.0, 0.0 };
         public static final double[] AT_MAX  = { 1.0, 1.0 };
     }

@@ -13,6 +13,8 @@ import java.util.Map;
 /**
  * Init-phase turret calibration for LM1Robot.
  *
+ * <p>Each run starts with both servos commanded to servo position 0.5.
+ *
  * <p>Mark two points (A = zero, B = 90 deg clockwise). This works out the
  * servo-position <-> turret-angle relationship and the turret's maximum angle each way, from the
  * servo's full 0..1 range. It prints those angles and a {@code ServoConstants.Turret} block to
@@ -57,6 +59,9 @@ public class TurretCalibrator {
     private static final double STICK_DEADBAND = 0.05;
     private static final double TRIGGER_THRESHOLD = 0.5;
 
+    /** Every calibration run starts with both servos commanded to this position. */
+    private static final double START_POSITION = 0.5;
+
     private final Servo[] servos;
     private final Gamepad gamepad;
     private final Telemetry telemetry;
@@ -78,8 +83,9 @@ public class TurretCalibrator {
         this.telemetry = telemetry;
         this.blackboard = blackboard;
 
-        // Starting value only; the turret subsystem already commanded this, so nothing moves.
-        this.position = bot.turret.getPosition(0);
+        // Always start at the middle of the servo range.
+        this.position = START_POSITION;
+        write();
         dt.reset();
     }
 

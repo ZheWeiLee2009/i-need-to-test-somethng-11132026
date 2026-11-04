@@ -24,6 +24,8 @@ public class TurretTest extends LinearOpMode {
         double min = bot.turret.getClipMin();   // includes the 270 deg clip
         double max = bot.turret.getClipMax();
 
+        bot.turret.setAngle(0.0);   // go to zero during INIT; go() can't be used before Play
+
         telemetry.addData("Calibration source", bot.turretCalSource);
         telemetry.addData("Range", "%.1f to %.1f deg", min, max);
         telemetry.addLine("Ready. Keep the turret clear; Play sweeps min -> 0 -> max.");
