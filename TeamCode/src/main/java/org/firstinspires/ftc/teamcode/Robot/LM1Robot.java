@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.Robot;
 
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
@@ -74,17 +74,24 @@ public class LM1Robot {
     public FlowerSubSystem flower;
     private final List<Subsystem> subsystems = new ArrayList<>();
 
-    public final RayCasting rayCast;
+    // ---- utils ----
 
+    public final RayCasting rayCast;
     public HardwareMap hwMap;
 
     public ElapsedTime time;
 
     public final Telemetry joined;
 
-//    private boolean autoShoot = true;
-    private double flowerAngle;
+    // ---- booleans ----
+
+    //    private boolean autoShoot = true;
+    private boolean isAudience = false;
     private boolean debug = false;
+
+    // ---- poses ----
+
+    private Pose2D target;
 
     public LM1Robot(HardwareMap hwMap, ElapsedTime runtime, Telemetry telemetry) {
         this.time = runtime;
@@ -133,7 +140,6 @@ public class LM1Robot {
 
         flower1 = this.hwMap.get(Servo.class, ServoConstants.Flower.NAMES[0]);
 
-
         fwL = this.hwMap.get(DcMotorEx.class, "fwL");
         fwR = this.hwMap.get(DcMotorEx.class, "fwR");
         flywheelMotors = Arrays.asList(fwL, fwR);
@@ -142,7 +148,8 @@ public class LM1Robot {
         turretRight = this.hwMap.get(Servo.class, ServoConstants.Turret.NAMES[1]);
 
         odo = this.hwMap.get(GoBildaPinpointDriver.class, "pinpoint");
-        odo.setOffsets(-2.6, -5.28, DistanceUnit.INCH);
+        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.FORWARD);
+        odo.setOffsets(-2.46, -5.32, DistanceUnit.INCH);
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odo.resetPosAndIMU();
         odo.recalibrateIMU();
@@ -216,6 +223,8 @@ public class LM1Robot {
         );
 
         this.rayCast = new RayCasting(zones, 141.5);
+
+        updateTarget();
 
         joined = new JoinedTelemetry(
                 PanelsTelemetry.INSTANCE.getFtcTelemetry(),
@@ -297,15 +306,23 @@ public class LM1Robot {
     // LAUNCHER
     // ==========================================================
 
+    public void switchSide(){
+        isAudience = !isAudience;
+        updateTarget();
+    }
+
+    public void updateTarget(){
+        //temporary
+        if (isAudience) target = new Pose2D(DistanceUnit.INCH, 64.5, 88, AngleUnit.DEGREES, 0.0);
+        else target = new Pose2D(DistanceUnit.INCH, 64.5, 63.5, AngleUnit.DEGREES, 0.0);
+    }
+
     public void prepareShooter(){
         Pose2D local = new Pose2D(DistanceUnit.INCH,
                 odo.getPosX(DistanceUnit.INCH),
                 odo.getPosY(DistanceUnit.INCH),
                 AngleUnit.RADIANS,
                 odo.getHeading(AngleUnit.RADIANS));
-
-        //temporary
-        Pose2D target =  new Pose2D(DistanceUnit.INCH, 58.5, 83.0, AngleUnit.DEGREES, 0.0);
 
         launcher.autoPIDF(local, target);
     }
@@ -354,6 +371,7 @@ public class LM1Robot {
         joined.addLine();
 
         joined.addLine("Odo Position:");
+        joined.addData("Target: ", isAudience ? "AUDIENCE" : "SCORING");
         joined.addData("Odo X", odo.getPosX(DistanceUnit.INCH));
         joined.addData("Odo Y", odo.getPosY(DistanceUnit.INCH));
         joined.addData("Odo Heading", odo.getHeading(AngleUnit.RADIANS));
@@ -368,6 +386,11 @@ public class LM1Robot {
         joined.addData("r2: ", transfer.r2.getState());
         joined.addData("r3: ", transfer.r3.getState());
         joined.addData("r4: ", transfer.r4.getState());
+        joined.addLine();
+
+        joined.addLine("Launcher RPM");
+        joined.addData("fwL: ", launcher.getFwLCurrentRPM());
+        joined.addData("fwR: ", launcher.getFwRCurrentRPM());
 
 //        joined.addData("Ball 1 Sensor Value: ", transfer.getB1());
 //        joined.addData("Ball 2 Sensor Value: ", transfer.getB2());

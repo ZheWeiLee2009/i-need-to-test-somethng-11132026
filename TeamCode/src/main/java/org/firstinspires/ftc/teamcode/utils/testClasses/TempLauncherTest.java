@@ -12,7 +12,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.Configs.roboConfigs.LauncherConstants;
-import org.firstinspires.ftc.teamcode.PracticeBot;
+import org.firstinspires.ftc.teamcode.Robot.PracticeBot;
 import org.firstinspires.ftc.teamcode.SubSystems.IntakeSubSystem;
 import org.firstinspires.ftc.teamcode.SubSystems.LauncherSubSystem;
 
@@ -25,7 +25,7 @@ import java.util.List;
  * <p>Runs through {@link PracticeBot}: the bot builds and sets up the launcher, and
  * {@code bot.update()} (once per loop) clears the bulk cache and ticks it while active.
  */
-@Disabled
+//@Disabled
 @Configurable
 @TeleOp(name = "Temp Launcher Test", group = "9 - Utility")
 public class TempLauncherTest extends OpMode {
@@ -82,11 +82,11 @@ public class TempLauncherTest extends OpMode {
     @Override
     public void init() {
 
-        fwL = hardwareMap.get(DcMotorEx.class, "leftShooter");
-        fwR = hardwareMap.get(DcMotorEx.class, "rightShooter");
+        fwL = hardwareMap.get(DcMotorEx.class, "fwL");
+        fwR = hardwareMap.get(DcMotorEx.class, "fwR");
         intake1 = hardwareMap.get(DcMotorEx.class, "intake");
         transfer = hardwareMap.get(DcMotorEx.class, "transfer");
-        blocker = hardwareMap.get(ServoImplEx.class, "shooterGate");
+        blocker = hardwareMap.get(ServoImplEx.class, "gate");
 
         flywheelMotors = Arrays.asList(fwL, fwR);
         launcher = new LauncherSubSystem(flywheelMotors); // NOTE: change if PracticeBot names the field differently
@@ -98,7 +98,7 @@ public class TempLauncherTest extends OpMode {
         launcher.setBangBangThresholds(BANG_BANG_ENTER_RPM, BANG_BANG_EXIT_RPM);
 
         intakeMotors = Arrays.asList(intake1);
-//        intake = new IntakeSubSystem(intakeMotors);
+        intake = new IntakeSubSystem(intakeMotors);
 
         intake.setup();
 

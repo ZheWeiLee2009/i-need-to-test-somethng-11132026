@@ -7,7 +7,6 @@ import static org.firstinspires.ftc.teamcode.Configs.roboConfigs.DriveConstants.
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.follower.ManualDrive;
 import com.pedropathing.math.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.Utility;
@@ -16,9 +15,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.teamcode.Configs.pedroPathing.Constants;
-import org.firstinspires.ftc.teamcode.PracticeBot;
+import org.firstinspires.ftc.teamcode.Robot.PracticeBot;
 
 /**
  * gamepad1 A: next drive state

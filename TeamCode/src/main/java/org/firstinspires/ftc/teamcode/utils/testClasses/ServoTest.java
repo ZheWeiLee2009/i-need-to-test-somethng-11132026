@@ -7,8 +7,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.Configs.roboConfigs.ServoConstants;
-import org.firstinspires.ftc.teamcode.LM1Robot;
-import org.firstinspires.ftc.teamcode.PracticeBot;
+import org.firstinspires.ftc.teamcode.Robot.LM1Robot;
 import org.firstinspires.ftc.teamcode.utils.ServoUtility;
 import org.firstinspires.ftc.teamcode.utils.ServoAxis;
 
