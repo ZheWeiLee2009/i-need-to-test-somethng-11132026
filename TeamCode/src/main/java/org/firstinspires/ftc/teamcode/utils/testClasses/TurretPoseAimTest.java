@@ -58,7 +58,7 @@ public class TurretPoseAimTest extends OpMode {
         double x = gamepad1.left_stick_x;
         double rx = gamepad1.right_stick_x;
 
-        bot.drive.setSTDDrive(y, x, rx, 1.0);
+        bot.drive.setSTDDrive(y, x, rx, 0.9);
 
 
         // Keep the target independent of the launcher's scoring/audience target.

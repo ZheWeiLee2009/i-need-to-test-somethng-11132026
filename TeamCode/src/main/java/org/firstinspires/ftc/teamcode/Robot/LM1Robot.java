@@ -95,6 +95,8 @@ public class LM1Robot {
 
     // ---- poses ----
 
+    private Pose2D lastLocal;
+    private Pose2D local;
     private Pose2D target;
 
     /** Turret numbers come from ServoConstants only. */
@@ -163,14 +165,11 @@ public class LM1Robot {
         turretRight = this.hwMap.get(Servo.class, ServoConstants.Turret.NAMES[1]);
 
         odo = this.hwMap.get(GoBildaPinpointDriver.class, "pinpoint");
-        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.FORWARD);
+        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
         odo.setOffsets(-2.46, -5.32, DistanceUnit.INCH);
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odo.resetPosAndIMU();
         odo.recalibrateIMU();
-
-        odo.setPosition(new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.RADIANS, 0));
-        odo.update();
 
         // ============================================================
         // Subsystem construction
@@ -270,20 +269,30 @@ public class LM1Robot {
             hub.clearBulkCache();
         }
 
-        if (intake.isActive()) intake.setBallCount(transfer.getBallCount());
-
         // Run background logic only for ACTIVE subsystems. Drive is first in this list,
         // so its update refreshes Pinpoint before the turret receives the current pose.
         for (Subsystem subsystem : subsystems) {
-            if (subsystem == turret) {
-                turret.setRobotPose(getPinpointPose());
-            }
             if (subsystem.isActive()) {
+
+                if (subsystem == drive){
+                    updatePinpointPose();
+                }
+
+                if (subsystem == intake){
+                    intake.setBallCount(transfer.getBallCount());
+                }
+
+                if (subsystem == turret) {
+                    turret.setRobotPose(local);
+                    turret.setTargetPose(target);
+                    turret.update();
+                }
+
                 subsystem.update();
             }
         }
 
-        rayCast.update(odo.getPosX(DistanceUnit.INCH), odo.getPosY(DistanceUnit.INCH));
+        rayCast.update(local.getX(DistanceUnit.INCH), local.getY(DistanceUnit.INCH));
 
         prepareShooter();
 
@@ -301,8 +310,18 @@ public class LM1Robot {
     // DRIVETRAIN
     // ==========================================================
 
-    public void setDrive(double y, double x, double rx, double heading, double multiplier){
-        drive.setFODDrive(y, x, rx, heading, multiplier);
+    public void setDrive(double y, double x, double rx, double multiplier){
+        drive.setFODDrive(y, x, rx, local.getHeading(AngleUnit.RADIANS), multiplier);
+    }
+
+    /** Current Pinpoint pose, in inches and radians. */
+    private void updatePinpointPose() {
+        lastLocal = local;
+        local =  new Pose2D(DistanceUnit.INCH,
+                odo.getPosX(DistanceUnit.INCH),
+                odo.getPosY(DistanceUnit.INCH),
+                AngleUnit.RADIANS,
+                odo.getHeading(AngleUnit.RADIANS));
     }
 
 
@@ -331,35 +350,7 @@ public class LM1Robot {
     // LAUNCHER
     // ==========================================================
 
-    public void switchSide(){
-        isAudience = !isAudience;
-        updateTarget();
-    }
-
-    public void updateTarget(){
-        //temporary
-        if (isAudience) target = new Pose2D(DistanceUnit.INCH, 64.5, 88, AngleUnit.DEGREES, 0.0);
-        else target = new Pose2D(DistanceUnit.INCH, 64.5, 63.5, AngleUnit.DEGREES, 0.0);
-    }
-
-    public void prepareShooter(){
-        Pose2D local = new Pose2D(DistanceUnit.INCH,
-                odo.getPosX(DistanceUnit.INCH),
-                odo.getPosY(DistanceUnit.INCH),
-                AngleUnit.RADIANS,
-                odo.getHeading(AngleUnit.RADIANS));
-
-        launcher.autoPIDF(local, target);
-    }
-
-    /** Current Pinpoint pose, in inches and radians. */
-    private Pose2D getPinpointPose() {
-        return new Pose2D(DistanceUnit.INCH,
-                odo.getPosX(DistanceUnit.INCH),
-                odo.getPosY(DistanceUnit.INCH),
-                AngleUnit.RADIANS,
-                odo.getHeading(AngleUnit.RADIANS));
-    }
+    public void prepareShooter(){ launcher.autoPIDF(local, target); }
 
     // ==========================================================
     // INTAKE/TRANSFER
@@ -377,9 +368,22 @@ public class LM1Robot {
 //    public void toggleAutoShoot(boolean set){ autoShoot = set; }
 
     public void launch(){
-        boolean ready = launcher.isAtTarget() && transfer.getBallCount() > 0;
+        boolean ready = /*Math.abs(local.getX(DistanceUnit.INCH) - lastLocal.getX(DistanceUnit.INCH)) < 0.5
+                && Math.abs(local.getY(DistanceUnit.INCH) - lastLocal.getY(DistanceUnit.INCH)) < 0.5
+                && rayCast.isInside() &&*/ launcher.isAtTarget() && transfer.getBallCount() > 0;
         intake.launchRequest(ready);
         transfer.launchRequest(ready);
+    }
+
+    public void switchSide(){
+        isAudience = !isAudience;
+        updateTarget();
+    }
+
+    public void updateTarget(){
+        //temporary
+        if (isAudience) target = new Pose2D(DistanceUnit.INCH, 58, 56, AngleUnit.DEGREES, 0.0);
+        else target = new Pose2D(DistanceUnit.INCH, 58, 84, AngleUnit.DEGREES, 0.0);
     }
 
     // ==========================================================
@@ -387,7 +391,7 @@ public class LM1Robot {
     // ==========================================================
 
     /** Toggles debug */
-    public void toggleDebug(boolean set){ debug = set; }
+    public void setDebug(boolean set){ debug = set; }
 
     /** Adds debug telemetry */
     public void debug(){
@@ -401,13 +405,15 @@ public class LM1Robot {
         joined.addData("Transfer Subsystem: ", transfer.isActive());
         joined.addData("Launcher Subsystem: ", launcher.isActive());
         joined.addData("Turret Subsystem: ", turret.isActive());
+        joined.addLine();
+
+        joined.addLine("Turret:");
         joined.addData("Turret calibration source: ", turretCalSource);
         joined.addData("Turret angle (deg): ", turret.getAngle());
         joined.addData("Turret target angle (deg): ", turret.getAimTargetAngleDeg());
         joined.addData("Turret requested angle (deg): ", turret.getRawAimAngleDeg());
         joined.addData("Turret target clipped: ", turret.isAimTargetClipped());
         joined.addData("Flower Subsystem: ", flower.isActive());
-        joined.addLine();
 
         joined.addLine("Odo Position:");
         joined.addData("Target: ", isAudience ? "AUDIENCE" : "SCORING");
@@ -430,11 +436,6 @@ public class LM1Robot {
         joined.addLine("Launcher RPM");
         joined.addData("fwL: ", launcher.getFwLCurrentRPM());
         joined.addData("fwR: ", launcher.getFwRCurrentRPM());
-
-//        joined.addData("Ball 1 Sensor Value: ", transfer.getB1());
-//        joined.addData("Ball 2 Sensor Value: ", transfer.getB2());
-//        joined.addData("Ball 3 Sensor Value: ", transfer.getB3());
-//        joined.addData("Ball 4 Sensor Value: ", transfer.getB4());
 
         joined.update();
     }

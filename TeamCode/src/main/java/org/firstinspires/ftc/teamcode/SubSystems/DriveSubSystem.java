@@ -333,6 +333,11 @@ public class DriveSubSystem extends Subsystem {
         return Math.max(-MAX_TURN_VELOCITY, Math.min(MAX_TURN_VELOCITY, output));
     }
 
+    public void resetOdo(){
+        odo.setPosition(new Pose2D(DistanceUnit.INCH, 6, 6.5, AngleUnit.RADIANS, Math.toRadians(90)));
+        odo.update();
+    }
+
     /**
      * Stops all drive motors and resets the internal power optimization cache.
      */
