@@ -51,6 +51,16 @@ public class TurretPoseAimTest extends OpMode {
         // Refresh Pinpoint without running the full robot loop / launcher logic.
         bot.drive.update();
 
+
+        if (gamepad1.y) {bot.odo.resetPosAndIMU();} //reset
+
+        double y = -gamepad1.left_stick_y;
+        double x = gamepad1.left_stick_x;
+        double rx = gamepad1.right_stick_x;
+
+        bot.drive.setSTDDrive(y, x, rx, 1.0);
+
+
         // Keep the target independent of the launcher's scoring/audience target.
         // Rebuild it each loop so dashboard edits to the constants are picked up immediately.
         bot.turret.setTargetPose(new Pose2D(

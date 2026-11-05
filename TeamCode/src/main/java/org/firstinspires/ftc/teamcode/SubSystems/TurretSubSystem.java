@@ -39,8 +39,8 @@ public class TurretSubSystem extends Subsystem {
     }
 
     /** The configured axis is asymmetric: 0 degrees faces backward; 180 degrees faces forward. */
-    public double getClipMin() { return Math.max(-CLIP_HALF_DEG, axis.getMinDeg()); }
-    public double getClipMax() { return Math.min(180.0, axis.getMaxDeg()); }
+    public double getClipMin() { return Math.max(-140, axis.getMinDeg()); }
+    public double getClipMax() { return Math.min(190.0, axis.getMaxDeg()); }
 
     public double clipAngle(double deg) {
         return ServoUtility.clamp(deg, getClipMin(), getClipMax());
