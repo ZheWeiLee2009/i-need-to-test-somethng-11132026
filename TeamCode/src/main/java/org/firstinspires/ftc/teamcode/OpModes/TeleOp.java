@@ -15,7 +15,8 @@ import org.firstinspires.ftc.teamcode.Robot.LM1Robot;
  * gamepad1 left stick:  drive (field-oriented, forward/strafe)
  * gamepad1 right stick: turn (X axis)
  * gamepad1 Y:           reset heading / pose (call when facing a known field direction)
- * gamepad1 dpad up:     re-center pose to the middle of the field
+ * gamepad1 dpad down:   toggle turret field-pose tracking active/inactive
+ * gamepad1 dpad left/right: manually nudge turret when tracking is inactive
  * gamepad1 B:           intake on
  * gamepad1 A:           intake off
  */
@@ -23,6 +24,9 @@ import org.firstinspires.ftc.teamcode.Robot.LM1Robot;
 public class TeleOp extends OpMode {
     private LM1Robot bot;
     private final ElapsedTime runtime = new ElapsedTime();
+    private boolean lastDpadDown = false;
+    private boolean lastDpadLeft = false;
+    private boolean lastDpadRight = false;
 
 
     @Override
@@ -49,6 +53,16 @@ public class TeleOp extends OpMode {
         if(gamepad1.aWasPressed()){ bot.startSpit(); }
         if(gamepad1.xWasPressed()){ bot.switchSide(); }
         if(gamepad1.yWasPressed()){ bot.odo.resetPosAndIMU(); }
+        if (gamepad1.dpad_down && !lastDpadDown) {
+            bot.turret.setActive(!bot.turret.isActive());
+        }
+        if (!bot.turret.isActive()) {
+            if (gamepad1.dpad_left && !lastDpadLeft) bot.turret.nudge(-5.0);
+            if (gamepad1.dpad_right && !lastDpadRight) bot.turret.nudge(5.0);
+        }
+        lastDpadDown = gamepad1.dpad_down;
+        lastDpadLeft = gamepad1.dpad_left;
+        lastDpadRight = gamepad1.dpad_right;
         if(gamepad1.rightBumperWasPressed()){ bot.launch(); }
         if(gamepad1.leftBumperWasPressed()){ bot.interruptStop(); }
 
@@ -80,4 +94,4 @@ public class TeleOp extends OpMode {
 
     @Override
     public void stop() { bot.stop(); }
-}
+}

@@ -272,8 +272,12 @@ public class LM1Robot {
 
         if (intake.isActive()) intake.setBallCount(transfer.getBallCount());
 
-        // Run background logic only for ACTIVE subsystems
+        // Run background logic only for ACTIVE subsystems. Drive is first in this list,
+        // so its update refreshes Pinpoint before the turret receives the current pose.
         for (Subsystem subsystem : subsystems) {
+            if (subsystem == turret) {
+                turret.setRobotPose(getPinpointPose());
+            }
             if (subsystem.isActive()) {
                 subsystem.update();
             }
@@ -348,6 +352,15 @@ public class LM1Robot {
         launcher.autoPIDF(local, target);
     }
 
+    /** Current Pinpoint pose, in inches and radians. */
+    private Pose2D getPinpointPose() {
+        return new Pose2D(DistanceUnit.INCH,
+                odo.getPosX(DistanceUnit.INCH),
+                odo.getPosY(DistanceUnit.INCH),
+                AngleUnit.RADIANS,
+                odo.getHeading(AngleUnit.RADIANS));
+    }
+
     // ==========================================================
     // INTAKE/TRANSFER
     // ==========================================================
@@ -389,6 +402,10 @@ public class LM1Robot {
         joined.addData("Launcher Subsystem: ", launcher.isActive());
         joined.addData("Turret Subsystem: ", turret.isActive());
         joined.addData("Turret calibration source: ", turretCalSource);
+        joined.addData("Turret angle (deg): ", turret.getAngle());
+        joined.addData("Turret target angle (deg): ", turret.getAimTargetAngleDeg());
+        joined.addData("Turret requested angle (deg): ", turret.getRawAimAngleDeg());
+        joined.addData("Turret target clipped: ", turret.isAimTargetClipped());
         joined.addData("Flower Subsystem: ", flower.isActive());
         joined.addLine();
 
@@ -422,4 +439,4 @@ public class LM1Robot {
         joined.update();
     }
 
-}
+}

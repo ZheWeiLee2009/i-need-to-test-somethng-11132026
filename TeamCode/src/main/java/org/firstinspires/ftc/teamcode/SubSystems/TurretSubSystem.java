@@ -1,69 +1,155 @@
-/**
- * EXAMPLE, Turret Setup
- */
-
 package org.firstinspires.ftc.teamcode.SubSystems;
+
+import static org.firstinspires.ftc.teamcode.Configs.roboConfigs.TurretConstants.AIM_DEADBAND_DEG;
+import static org.firstinspires.ftc.teamcode.Configs.roboConfigs.TurretConstants.AIM_OFFSET_DEG;
+import static org.firstinspires.ftc.teamcode.Configs.roboConfigs.TurretConstants.PINPOINT_FORWARD_OF_TURRET_MM;
 
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.utils.ServoAxis;
 import org.firstinspires.ftc.teamcode.utils.ServoUtility;
 
-
-/*
-    Do not modify this in any repos other than this one without knowing how to deal with git-merge.
- */
-
 /**
- * TURRET — one specific task: aim the shooter horizontally.
- * Owns its servos. Future home of vision tracking / limit sensors.
- *
- * <p>Clip: the turret is limited to {@code CLIP_TOTAL_DEG} of travel centered on zero
- * (270 deg total = +/-135 deg). Every angle command goes through {@link #clipAngle(double)}.
- * The clip is applied on top of the axis range from ServoConstants / the calibration, never
- * past it: if the calibrated range is smaller than the clip on a side, that smaller range wins.
+ * Turret subsystem. When active and given a target field pose, points the turret at that pose.
+ * The target is set explicitly with setTargetPose(); it is not coupled to launcher target selection.
  */
 public class TurretSubSystem extends Subsystem {
 
-    /** Total allowed travel, split evenly either side of zero. */
+    /** Physical/software travel limits are additionally restricted by the calibrated ServoAxis. */
     public static final double CLIP_TOTAL_DEG = 270.0;
     private static final double CLIP_HALF_DEG = CLIP_TOTAL_DEG / 2.0;
+    private static final double MIN_TARGET_DISTANCE_IN = 0.25;
+    private static final double MM_PER_INCH = 25.4;
 
     private final ServoAxis axis;
+    private Pose2D robotPose;
+    private Pose2D targetPose;
+
+    private double rawAimAngleDeg = Double.NaN;
+    private double aimTargetAngleDeg = Double.NaN;
+    private boolean aimTargetClipped = false;
 
     public TurretSubSystem(Servo[] servos,
                            double minDeg, double maxDeg,
                            double[] atMin, double[] atMax) {
-        this.axis = new ServoAxis("turret", servos, minDeg, maxDeg, atMin, atMax);
+        axis = new ServoAxis("turret", servos, minDeg, maxDeg, atMin, atMax);
     }
 
-    // ---- clip ----
-
-    /** Smallest allowed angle: -135 deg, or the axis minimum if that is tighter. */
+    /** The configured axis is asymmetric: 0 degrees faces backward; 180 degrees faces forward. */
     public double getClipMin() { return Math.max(-CLIP_HALF_DEG, axis.getMinDeg()); }
+    public double getClipMax() { return Math.min(180.0, axis.getMaxDeg()); }
 
-    /** Largest allowed angle: +135 deg, or the axis maximum if that is tighter. */
-    public double getClipMax() { return Math.min(180, axis.getMaxDeg()); }
-
-    /** Clamp an angle (deg, 0 = zero direction, + = clockwise) into the clipped range. */
     public double clipAngle(double deg) {
         return ServoUtility.clamp(deg, getClipMin(), getClipMax());
     }
 
-    // ---- control (all clipped) ----
+    public void setAngle(double deg) { axis.setAngle(clipAngle(deg)); }
+    public void nudge(double deltaDeg) { setAngle(axis.getAngle() + deltaDeg); }
+    public void atMin() { setAngle(getClipMin()); }
+    public void atMax() { setAngle(getClipMax()); }
+    public double getAngle() { return axis.getAngle(); }
+    public double getPosition(int i) { return axis.getPosition(i); }
+    public Servo[] getServos() { return axis.getServos(); }
 
-    public void   setAngle(double deg) { axis.setAngle(clipAngle(deg)); }
-    public void   nudge(double d)      { setAngle(axis.getAngle() + d); }
-    public void   atMin()              { setAngle(getClipMin()); }
-    public void   atMax()              { setAngle(getClipMax()); }
-    public double getAngle()           { return axis.getAngle(); }
-    public double getPosition(int i)   { return axis.getPosition(i); }
-    public Servo[] getServos()         { return axis.getServos(); }
+    /** Set the field-space pose that the turret should point toward. */
+    public void setTargetPose(Pose2D targetPose) {
+        this.targetPose = targetPose;
+    }
 
-    /** Exposed for the calibration OpMode. Not needed by normal OpModes. Bypasses the clip. */
-    public ServoAxis getAxis()         { return axis; }
+    public Pose2D getTargetPose() { return targetPose; }
 
-    @Override public void setup() { setAngle(getClipMax()); }
-    @Override public void stop()   { axis.stop(); }
-    @Override public void update() { /* no-op; add auto-aim here later */ }
+    /** Updated by LM1Robot after the drivetrain/Pinpoint update each loop. */
+    public void setRobotPose(Pose2D robotPose) {
+        this.robotPose = robotPose;
+    }
+
+    public double getRawAimAngleDeg() { return rawAimAngleDeg; }
+    public double getAimTargetAngleDeg() { return aimTargetAngleDeg; }
+    public boolean isAimTargetClipped() { return aimTargetClipped; }
+
+    /**
+     * Runs only while this subsystem is active. The Pinpoint is 20 mm forward of the turret
+     * pivot, so the robot pose is translated backward along robot-forward to obtain the turret
+     * pivot's field position before calculating the bearing.
+     *
+     * <p>Turret angle convention: 0 degrees is backward and 180 degrees is forward.
+     */
+    @Override
+    public void update() {
+        if (!isActive() || robotPose == null || targetPose == null) return;
+
+        double headingRad = robotPose.getHeading(AngleUnit.RADIANS);
+        double pinX = robotPose.getX(DistanceUnit.INCH);
+        double pinY = robotPose.getY(DistanceUnit.INCH);
+        if (!Double.isFinite(headingRad) || !Double.isFinite(pinX) || !Double.isFinite(pinY)) return;
+
+        double offsetIn = PINPOINT_FORWARD_OF_TURRET_MM / MM_PER_INCH;
+        // With +Y forward at zero heading and CCW-positive heading:
+        // robot-forward = (-sin(heading), cos(heading)).
+        // Turret pivot is 20 mm backward from Pinpoint.
+        double turretX = pinX + offsetIn * Math.sin(headingRad);
+        double turretY = pinY - offsetIn * Math.cos(headingRad);
+
+        double dx = targetPose.getX(DistanceUnit.INCH) - turretX;
+        double dy = targetPose.getY(DistanceUnit.INCH) - turretY;
+        double distance = Math.hypot(dx, dy);
+        if (!Double.isFinite(distance) || distance < MIN_TARGET_DISTANCE_IN) return;
+
+        // Bearing is clockwise from field-forward. Add CCW-positive robot heading to get
+        // clockwise bearing relative to robot-forward. 180 degrees is turret-forward.
+        double worldBearingClockwiseDeg = Math.toDegrees(Math.atan2(dx, dy));
+        double relativeBearingClockwiseDeg = worldBearingClockwiseDeg + Math.toDegrees(headingRad);
+        rawAimAngleDeg = 180.0 + relativeBearingClockwiseDeg + AIM_OFFSET_DEG;
+        if (!Double.isFinite(rawAimAngleDeg)) return;
+
+        aimTargetAngleDeg = resolveEquivalentAngle(rawAimAngleDeg);
+        aimTargetClipped = Math.abs(ServoUtility.shortestAngleDelta(
+                aimTargetAngleDeg, rawAimAngleDeg)) > 0.5;
+
+        double deadband = Math.max(0.0, AIM_DEADBAND_DEG);
+        if (Math.abs(ServoUtility.shortestAngleDelta(axis.getAngle(), aimTargetAngleDeg)) > deadband) {
+            setAngle(aimTargetAngleDeg);
+        }
+    }
+
+    private double resolveEquivalentAngle(double requestedDeg) {
+        double normalized = ServoUtility.wrapDegrees180(requestedDeg);
+        double min = getClipMin();
+        double max = getClipMax();
+
+        double best = ServoUtility.clamp(normalized, min, max);
+        double bestError = Math.abs(normalized - best);
+
+        double plusTurn = normalized + 360.0;
+        double plusClipped = ServoUtility.clamp(plusTurn, min, max);
+        double plusError = Math.abs(plusTurn - plusClipped);
+        if (plusError < bestError) {
+            best = plusClipped;
+            bestError = plusError;
+        }
+
+        double minusTurn = normalized - 360.0;
+        double minusClipped = ServoUtility.clamp(minusTurn, min, max);
+        double minusError = Math.abs(minusTurn - minusClipped);
+        if (minusError < bestError) best = minusClipped;
+        return best;
+    }
+
+    /** Exposed for the calibration OpMode. */
+    public ServoAxis getAxis() { return axis; }
+
+    @Override
+    public void setup() {
+        setActive(false);
+        setAngle(180.0); // turret's forward-facing position
+    }
+
+    @Override
+    public void stop() {
+        setActive(false);
+        axis.stop(); // positional servos hold their last commanded position
+    }
 }
