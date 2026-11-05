@@ -24,6 +24,7 @@ import org.firstinspires.ftc.teamcode.SubSystems.Subsystem;
 import org.firstinspires.ftc.teamcode.SubSystems.TransferSubSystem;
 import org.firstinspires.ftc.teamcode.SubSystems.TurretSubSystem;
 import org.firstinspires.ftc.teamcode.utils.RayCasting;
+import org.firstinspires.ftc.teamcode.utils.customMath;
 import org.firstinspires.ftc.teamcode.utils.TurretCalibrationStore;
 
 import java.util.ArrayList;
@@ -169,7 +170,10 @@ public class LM1Robot {
         odo.resetPosAndIMU();
         odo.recalibrateIMU();
 
-        odo.setPosition(new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.RADIANS, 0));
+        // Pinpoint is x-forward / y-left; field code is x-right / y-forward. Seed through the
+        // converter (origin + heading 0 are identical in both frames, but keep it uniform).
+        odo.setPosition(customMath.fieldToPinpoint(
+                new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.RADIANS, 0)));
         odo.update();
 
         // ============================================================
@@ -276,14 +280,14 @@ public class LM1Robot {
         // so its update refreshes Pinpoint before the turret receives the current pose.
         for (Subsystem subsystem : subsystems) {
             if (subsystem == turret) {
-                turret.setRobotPose(getPinpointPose());
+                turret.setRobotPose(getFieldPose());
             }
             if (subsystem.isActive()) {
                 subsystem.update();
             }
         }
 
-        rayCast.update(odo.getPosX(DistanceUnit.INCH), odo.getPosY(DistanceUnit.INCH));
+        rayCast.update(drive.getFieldX(), drive.getFieldY());
 
         prepareShooter();
 
@@ -343,22 +347,15 @@ public class LM1Robot {
     }
 
     public void prepareShooter(){
-        Pose2D local = new Pose2D(DistanceUnit.INCH,
-                odo.getPosX(DistanceUnit.INCH),
-                odo.getPosY(DistanceUnit.INCH),
-                AngleUnit.RADIANS,
-                odo.getHeading(AngleUnit.RADIANS));
-
-        launcher.autoPIDF(local, target);
+        launcher.autoPIDF(getFieldPose(), target);
     }
 
-    /** Current Pinpoint pose, in inches and radians. */
-    private Pose2D getPinpointPose() {
-        return new Pose2D(DistanceUnit.INCH,
-                odo.getPosX(DistanceUnit.INCH),
-                odo.getPosY(DistanceUnit.INCH),
-                AngleUnit.RADIANS,
-                odo.getHeading(AngleUnit.RADIANS));
+    /**
+     * Current robot pose in the FIELD frame (x right, y forward, inches/radians) — converted
+     * from the Pinpoint's native x-forward / y-left axes. Targets and zones use this frame.
+     */
+    private Pose2D getFieldPose() {
+        return drive.getFieldPose();
     }
 
     // ==========================================================
@@ -411,9 +408,11 @@ public class LM1Robot {
 
         joined.addLine("Odo Position:");
         joined.addData("Target: ", isAudience ? "AUDIENCE" : "SCORING");
-        joined.addData("Odo X", odo.getPosX(DistanceUnit.INCH));
-        joined.addData("Odo Y", odo.getPosY(DistanceUnit.INCH));
-        joined.addData("Odo Heading", odo.getHeading(AngleUnit.RADIANS));
+        joined.addData("Field X (right +)", drive.getFieldX());
+        joined.addData("Field Y (forward +)", drive.getFieldY());
+        joined.addData("Heading (rad, CCW +)", drive.getHeadingRad());
+        joined.addData("Pinpoint raw X (fwd +)", odo.getPosX(DistanceUnit.INCH));
+        joined.addData("Pinpoint raw Y (left +)", odo.getPosY(DistanceUnit.INCH));
         joined.addLine();
 
         joined.addLine("Transfer Sensors:");

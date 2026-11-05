@@ -15,8 +15,9 @@ import org.firstinspires.ftc.teamcode.Robot.LM1Robot;
  *
  * <p>The target is read from TurretConstants every loop, so TARGET_X_IN and TARGET_Y_IN can
  * be adjusted from the Configurables dashboard while this OpMode is running (when available).
- * The robot should start from a known Pinpoint field pose that uses the same coordinate frame
- * as the target.
+ * The robot should start from a known field pose that uses the same coordinate frame as the
+ * target: field frame, x = right, y = forward (the Pinpoint's raw x-forward / y-left axes are
+ * converted by DriveSubSystem.getFieldPose()).
  *
  * <p>This OpMode intentionally does NOT call LM1Robot.update(), because that also runs launcher
  * logic. Instead it updates only the drivetrain's Pinpoint reader and the turret subsystem.
@@ -77,13 +78,8 @@ public class TurretPoseAimTest extends OpMode {
         }
         lastDpadDown = gamepad1.dpad_down;
 
-        Pose2D robotPose = new Pose2D(
-                DistanceUnit.INCH,
-                bot.odo.getPosX(DistanceUnit.INCH),
-                bot.odo.getPosY(DistanceUnit.INCH),
-                AngleUnit.RADIANS,
-                bot.odo.getHeading(AngleUnit.RADIANS)
-        );
+        // Field frame (x right, y forward) — NOT the Pinpoint's raw x-forward / y-left.
+        Pose2D robotPose = bot.drive.getFieldPose();
         bot.turret.setRobotPose(robotPose);
 
         // update() is called only while the turret is active; while inactive, the servos hold.
@@ -93,8 +89,8 @@ public class TurretPoseAimTest extends OpMode {
 
         Pose2D target = bot.turret.getTargetPose();
         telemetry.addData("Turret active", bot.turret.isActive());
-        telemetry.addData("Pinpoint X (in)", "%.2f", robotPose.getX(DistanceUnit.INCH));
-        telemetry.addData("Pinpoint Y (in)", "%.2f", robotPose.getY(DistanceUnit.INCH));
+        telemetry.addData("Field X, right + (in)", "%.2f", robotPose.getX(DistanceUnit.INCH));
+        telemetry.addData("Field Y, forward + (in)", "%.2f", robotPose.getY(DistanceUnit.INCH));
         telemetry.addData("Heading (deg)", "%.1f", robotPose.getHeading(AngleUnit.DEGREES));
         telemetry.addData("Target X (in)", "%.2f", target.getX(DistanceUnit.INCH));
         telemetry.addData("Target Y (in)", "%.2f", target.getY(DistanceUnit.INCH));

@@ -16,11 +16,11 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.seattlesolvers.solverslib.controller.PIDFController;
 import com.seattlesolvers.solverslib.geometry.Pose2d;
-import com.seattlesolvers.solverslib.geometry.Vector2d;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+import org.firstinspires.ftc.teamcode.utils.customMath;
 
 import java.util.List;
 
@@ -76,6 +76,51 @@ public class DriveSubSystem extends Subsystem {
     }
 
     // ==========================================================
+    // ODOMETRY — FIELD-FRAME ACCESSORS
+    //
+    // The Pinpoint reports x = forward, y = LEFT. Everything else in this project (targets,
+    // ray-cast zones, turret aiming, start poses) uses the field frame: x = RIGHT, y = FORWARD
+    // (same orientation as PedroPathing). Read and seed odometry ONLY through these methods so
+    // the axes are converted in exactly one place. Heading is the same in both frames.
+    // ==========================================================
+
+    /** Robot X in the field frame (+right), inches. */
+    public double getFieldX() {
+        return customMath.pinpointToFieldX(odo.getPosX(DistanceUnit.INCH), odo.getPosY(DistanceUnit.INCH));
+    }
+
+    /** Robot Y in the field frame (+forward), inches. */
+    public double getFieldY() {
+        return customMath.pinpointToFieldY(odo.getPosX(DistanceUnit.INCH), odo.getPosY(DistanceUnit.INCH));
+    }
+
+    /** Robot heading in radians, CCW-positive, 0 = the direction the robot faced at reset. */
+    public double getHeadingRad() {
+        return odo.getHeading(AngleUnit.RADIANS);
+    }
+
+    /** Robot velocity along field X (+right), inches/second. */
+    public double getFieldVelX() {
+        return customMath.pinpointToFieldX(odo.getVelX(DistanceUnit.INCH), odo.getVelY(DistanceUnit.INCH));
+    }
+
+    /** Robot velocity along field Y (+forward), inches/second. */
+    public double getFieldVelY() {
+        return customMath.pinpointToFieldY(odo.getVelX(DistanceUnit.INCH), odo.getVelY(DistanceUnit.INCH));
+    }
+
+    /** Current pose in the field frame (inches, radians). Call update() first for fresh data. */
+    public Pose2D getFieldPose() {
+        return new Pose2D(DistanceUnit.INCH, getFieldX(), getFieldY(),
+                AngleUnit.RADIANS, getHeadingRad());
+    }
+
+    /** Seeds the odometry with a field-frame pose; converts to the Pinpoint's axes for you. */
+    public void setFieldPose(Pose2D fieldPose) {
+        odo.setPosition(customMath.fieldToPinpoint(fieldPose));
+    }
+
+    // ==========================================================
     // SHARED MATH — single source of truth for the mecanum mix and the
     // field<->robot rotation, so every drive method below (and the deprecated
     // calculate*MotorPowers helpers) computes the same numbers the same way.
@@ -98,10 +143,12 @@ public class DriveSubSystem extends Subsystem {
     }
 
     /**
-     * Rotates the 2D vector (x, y) by -heading (radians). Used to convert between
-     * field-relative and robot-relative values — both field-relative joystick input
-     * (heading = robot heading) and a field-relative velocity vector (for the
-     * instant-stop brake) go through this same rotation.
+     * Rotates the 2D FIELD-frame vector (x = right, y = forward) by -heading (radians) into
+     * the robot frame. Returns {robotRight, robotForward}. Both field-relative joystick input
+     * (heading = robot heading) and a field-relative velocity vector (for the instant-stop
+     * brake, via getFieldVelX/Y) go through this same rotation.
+     *
+     * <p>Do NOT pass raw Pinpoint x/y here — they are x-forward / y-left. Convert first.
      */
     private static double[] rotateByHeading(double x, double y, double heading) {
         double cos = Math.cos(-heading);
@@ -183,9 +230,9 @@ public class DriveSubSystem extends Subsystem {
         double stickMag = Math.hypot(axial, lateral);
 
         if (stickMag < 0.1) {
-            double vx = odo.getVelX(DistanceUnit.INCH);
-            double vy = odo.getVelY(DistanceUnit.INCH);
-            double heading = odo.getHeading(AngleUnit.RADIANS);
+            double vx = getFieldVelX();
+            double vy = getFieldVelY();
+            double heading = getHeadingRad();
 
             applyBrakeOrSpin(vx, vy, heading, yaw, speedMultiplier);
         } else {
@@ -206,8 +253,8 @@ public class DriveSubSystem extends Subsystem {
         double stickMag = Math.hypot(axial, lateral);
 
         if (stickMag < 0.1) {
-            double vx = odo.getVelX(DistanceUnit.INCH);
-            double vy = odo.getVelY(DistanceUnit.INCH);
+            double vx = getFieldVelX();
+            double vy = getFieldVelY();
 
             applyBrakeOrSpin(vx, vy, heading, yaw, speedMultiplier);
         } else {
@@ -223,8 +270,9 @@ public class DriveSubSystem extends Subsystem {
      * asking to turn, otherwise just spins in place (or sits idle) on yaw alone.
      */
     private void applyBrakeOrSpin(double vx, double vy, double heading, double yaw, double speedMultiplier) {
+        // vx/vy are FIELD-frame (x right, y forward). rotateByHeading returns {right, forward}.
         double[] robotVel = rotateByHeading(vx, vy, heading);
-        double robotAxial = robotVel[0], robotLateral = robotVel[1];
+        double robotLateral = robotVel[0], robotAxial = robotVel[1];
         double speed = Math.hypot(robotAxial, robotLateral);
 
         if (speed > VELOCITY_CUTOFF && yaw > .01) {
@@ -292,22 +340,20 @@ public class DriveSubSystem extends Subsystem {
     }
 
     /**
-     * Getting theta of pose difference.
+     * Heading error to a FIELD-frame target (x right, y forward, inches).
      *
-     * @param target Target's Pose
-     * @return Angle of difference
+     * @param target Target's Pose, in the field frame
+     * @return Angle (radians, CCW-positive, wrapped to [-pi, pi]) from the robot's current
+     *         heading to the direction of the target. 0 means the robot is already facing it.
      */
     private double headingToTarget(Pose2d target) {
-        double dx = target.getX() - odo.getPosX(DistanceUnit.INCH);
-        double dy = target.getX() - odo.getPosY(DistanceUnit.INCH);
+        double dx = target.getX() - getFieldX();
+        double dy = target.getY() - getFieldY();
 
-        Vector2d lineToTarget = new Vector2d(dx, dy);
-        double error = lineToTarget.angle() - odo.getHeading(AngleUnit.RADIANS);
-
-        if (error > Math.PI)  error -= 2 * Math.PI;
-        if (error < -Math.PI) error += 2 * Math.PI;
-
-        return error;
+        // Bearing of the target measured CCW from field-forward (+Y), to match the heading
+        // convention (0 = forward, CCW-positive). Vector2d.angle() would be measured from +X.
+        double bearing = Math.atan2(-dx, dy);
+        return AngleUnit.normalizeRadians(bearing - getHeadingRad());
     }
 
     /**
