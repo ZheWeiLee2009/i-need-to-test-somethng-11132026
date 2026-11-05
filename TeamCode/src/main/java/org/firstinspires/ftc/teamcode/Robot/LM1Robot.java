@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.Robot;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
@@ -16,6 +17,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.Configs.roboConfigs.ServoConstants;
+import org.firstinspires.ftc.teamcode.Configs.roboConfigs.VisionConstants;
 import org.firstinspires.ftc.teamcode.SubSystems.DriveSubSystem;
 import org.firstinspires.ftc.teamcode.SubSystems.FlowerSubSystem;
 import org.firstinspires.ftc.teamcode.SubSystems.IntakeSubSystem;
@@ -23,6 +25,7 @@ import org.firstinspires.ftc.teamcode.SubSystems.LauncherSubSystem;
 import org.firstinspires.ftc.teamcode.SubSystems.Subsystem;
 import org.firstinspires.ftc.teamcode.SubSystems.TransferSubSystem;
 import org.firstinspires.ftc.teamcode.SubSystems.TurretSubSystem;
+import org.firstinspires.ftc.teamcode.SubSystems.VisionSubSystem;
 import org.firstinspires.ftc.teamcode.utils.RayCasting;
 import org.firstinspires.ftc.teamcode.utils.TurretCalibrationStore;
 
@@ -76,6 +79,8 @@ public class LM1Robot {
     /** Where the turret limits/calibration came from: "BLACKBOARD" or "ServoConstants". */
     public String turretCalSource = "ServoConstants";
     public FlowerSubSystem flower;
+    public VisionSubSystem vision;
+    public Limelight3A limelight;
     private final List<Subsystem> subsystems = new ArrayList<>();
 
     // ---- utils ----
@@ -164,6 +169,8 @@ public class LM1Robot {
         turretLeft = this.hwMap.get(Servo.class, ServoConstants.Turret.NAMES[0]);
         turretRight = this.hwMap.get(Servo.class, ServoConstants.Turret.NAMES[1]);
 
+        limelight = this.hwMap.get(Limelight3A.class, VisionConstants.NAME);
+
         odo = this.hwMap.get(GoBildaPinpointDriver.class, "pinpoint");
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
         odo.setOffsets(-2.46, -5.32, DistanceUnit.INCH);
@@ -202,12 +209,15 @@ public class LM1Robot {
                 ServoConstants.Flower.AT_MAX
                 );
 
+        vision = new VisionSubSystem(limelight);
+
         subsystems.add(drive);
         subsystems.add(intake);
         subsystems.add(transfer);
         subsystems.add(launcher);
         subsystems.add(turret);
         subsystems.add(flower);
+        subsystems.add(vision);
 
 //
 //        pitch = new ServoTaskSubsystem("pitch",
@@ -362,6 +372,13 @@ public class LM1Robot {
 
 
     // ==========================================================
+    // VISION
+    // ==========================================================
+
+    /** Turns the Limelight on for one scan window to read AprilTags. */
+    public void startTagScan(){ vision.startScan(); }
+
+    // ==========================================================
     // FULL BOT
     // ==========================================================
 
@@ -414,6 +431,12 @@ public class LM1Robot {
         joined.addData("Turret requested angle (deg): ", turret.getRawAimAngleDeg());
         joined.addData("Turret target clipped: ", turret.isAimTargetClipped());
         joined.addData("Flower Subsystem: ", flower.isActive());
+
+        joined.addLine("Vision (AprilTags):");
+        joined.addData("Limelight on: ", vision.isScanning());
+        joined.addData("Scan time left (s): ", vision.getTimeLeft());
+        joined.addData("Tag IDs: ", vision.getTagIds().toString());
+        joined.addLine();
 
         joined.addLine("Odo Position:");
         joined.addData("Target: ", isAudience ? "AUDIENCE" : "SCORING");

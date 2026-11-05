@@ -21,6 +21,7 @@ import org.firstinspires.ftc.teamcode.Robot.LM1Robot;
  * gamepad1 dpad left/right: manually nudge turret when tracking is inactive
  * gamepad1 B:           intake on
  * gamepad1 A:           intake off
+ * gamepad1 dpad up:     Limelight AprilTag scan (camera on for a short window only)
  */
 @com.qualcomm.robotcore.eventloop.opmode.TeleOp(name = "TeleOp", group = ".")
 public class TeleOp extends OpMode {
@@ -53,6 +54,7 @@ public class TeleOp extends OpMode {
         if(gamepad1.bWasPressed()){ bot.startIntaking(); }
         if(gamepad1.aWasPressed()){ bot.startSpit(); }
         if(gamepad1.xWasPressed()){ bot.switchSide(); }
+        if(gamepad1.dpadUpWasPressed()){ bot.startTagScan(); }
         if(gamepad1.yWasPressed()){
             bot.drive.resetOdo();
         }
