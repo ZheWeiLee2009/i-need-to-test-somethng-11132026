@@ -289,9 +289,6 @@ public class LM1Robot {
         // Run background logic only for ACTIVE subsystems. Drive is first in this list,
         // so its update refreshes Pinpoint before the turret receives the current pose.
         for (Subsystem subsystem : subsystems) {
-            if (subsystem == turret) {
-                turret.setRobotPose(getFieldPose());
-            }
             if (subsystem.isActive()) {
 
                 if (subsystem == drive){
@@ -303,7 +300,7 @@ public class LM1Robot {
                 }
 
                 if (subsystem == turret) {
-                    turret.setRobotPose(local);
+                    turret.setRobotPose(getFieldPose());
                     turret.setTargetPose(target);
                     turret.update();
                 }
@@ -421,17 +418,6 @@ public class LM1Robot {
                 && rayCast.isInside() &&*/ launcher.isAtTarget() && transfer.getBallCount() > 0;
         intake.launchRequest(ready);
         transfer.launchRequest(ready);
-    }
-
-    public void switchSide(){
-        isAudience = !isAudience;
-        updateTarget();
-    }
-
-    public void updateTarget(){
-        //temporary
-        if (isAudience) target = new Pose2D(DistanceUnit.INCH, 58, 56, AngleUnit.DEGREES, 0.0);
-        else target = new Pose2D(DistanceUnit.INCH, 58, 84, AngleUnit.DEGREES, 0.0);
     }
 
     // ==========================================================
