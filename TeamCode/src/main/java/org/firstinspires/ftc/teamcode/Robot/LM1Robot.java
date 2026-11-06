@@ -407,9 +407,6 @@ public class LM1Robot {
     // VISION
     // ==========================================================
 
-    /** Turns the Limelight on for one scan window to read AprilTags. */
-    public void startTagScan(){ vision.startScan(); }
-
     // ==========================================================
     // FULL BOT
     // ==========================================================

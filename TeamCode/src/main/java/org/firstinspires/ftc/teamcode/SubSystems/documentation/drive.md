@@ -34,8 +34,10 @@ DriveConstants (Configs) ── read by DriveSubSystem
 
 `DriveSubSystem.update()` just calls `odo.update()` — it must run every loop (via
 `bot.update()`) or the pose/velocity data used for field-oriented drive and braking goes stale.
-The subsystem starts **inactive**; an OpMode must call `bot.drive.setActive(true)` (see
-`FOTeleOpDrive.init()`) or `bot.update()` will skip it.
+`bot.drive.setActive(false)` pauses only this background odometry refresh; it does **not** disable
+manual drive-motor commands. This is useful for robot-centric driving, which does not need fresh
+odometry. The subsystem is activated by `setup()`; an OpMode can manually pause or resume updates
+with `bot.drive.setActive(false/true)`.
 
 ---
 
@@ -171,7 +173,7 @@ robot config that only wires up one naming scheme.
 
 | Pitfall | Fix |
 |---|---|
-| Robot drives but odometry/heading never updates | `bot.drive.setActive(true)` was never called — `update()` only runs for active subsystems (see `Subsystem.isActive()`). |
+| Robot drives but odometry/heading never updates | Confirm `bot.drive.isActive()` is true — `setActive(false)` intentionally pauses only background odometry updates. |
 | `instantStopDrive`'s brake never fires | Check `VELOCITY_CUTOFF` — if it's set higher than the robot's actual driving speed, `speed > VELOCITY_CUTOFF` is never true. Also confirm you're actually releasing the stick below the `0.1` deadzone. |
 | Robot spins the wrong way from a joystick nudge | A drive motor's direction or `*_Offset` is flipped from what you expect — check `PracticeBot`'s `setDirection(...)` calls and the `DriveConstants` offsets together, not just one or the other. |
 | Field-oriented drive "forward" drifts over a match | Odometry heading drift — re-run `bot.odo.resetPosAndIMU()` at a known heading before each match, and press the reset button mapped in your OpMode (`gamepad1.y` in `FOTeleOpDrive`) if it drifts mid-match. |
@@ -189,6 +191,7 @@ robot config that only wires up one naming scheme.
 | `instantStopDrive(axial, lateral, yaw, speedMultiplier)` | Robot-centric + brake; reads heading from `odo` internally. |
 | `instantStopFODDrive(axial, lateral, yaw, heading, speedMultiplier)` | Field-centric + brake. |
 | `setIndividualPowers(fl, bl, fr, br)` | No mixing, no offsets — raw per-wheel power. |
+| `setActive(boolean)` | Enables/disables periodic odometry updates. Disabling does not block drive-motor commands. |
 | `stop()` | Zeroes all four motors and resets the write-cache. |
 | `update()` | Ticks `odo.update()`. Call once per loop via `bot.update()` while active. |
 | `setup()` | Configures motor mode + zero-power behavior. Called automatically by `PracticeBot`. |

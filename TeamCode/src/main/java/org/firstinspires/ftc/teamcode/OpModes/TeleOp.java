@@ -60,7 +60,6 @@ public class TeleOp extends OpMode {
         if(gamepad1.bWasPressed()){ bot.startIntaking(); }
         if(gamepad1.aWasPressed()){ bot.startSpit(); }
         if(gamepad1.xWasPressed()){ bot.switchSide(); }
-        if(gamepad1.dpadUpWasPressed()){ bot.startTagScan(); }
         if(gamepad1.yWasPressed()){ bot.drive.resetOdo(); }
         if (gamepad1.backWasPressed()) { bot.launcher.setActive(!bot.launcher.isActive()); }
 
@@ -69,7 +68,7 @@ public class TeleOp extends OpMode {
         }
 
         if (gamepad1.dpadUpWasPressed()) {
-            bot.startTagScan();
+            bot.vision.setActive(!bot.vision.isActive());
         }
 
         if (!bot.turret.isActive()) {

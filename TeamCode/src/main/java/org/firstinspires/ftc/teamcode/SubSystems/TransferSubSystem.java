@@ -53,27 +53,60 @@ public class TransferSubSystem extends Subsystem{
             timeoutTimer = new ElapsedTime();
     }
 
+    /**
+     * Enables or disables the transfer state machine.
+     * Disabling it also stops the motor, lowers the gate, and clears pending operations.
+     */
+    @Override
+    public void setActive(boolean active) {
+        if (active) {
+            super.setActive(true);
+            return;
+        }
+
+        super.setActive(false);
+        off();
+        gateDown();
+        resetSensors();
+        resetIntaking();
+        resetLaunching();
+        resetSpitting();
+        transferFull = false;
+        ball1Stuck = false;
+        emptyTimer.reset();
+        settledTimer.reset();
+        fullTimer.reset();
+        timeoutTimer.reset();
+    }
+
     /** Initializes gate. */
     @Override
     public void setup(){ gateDown(); }
 
-    /** Runs the transfer motor at full power. */
-    public void on(){ transfer.setPower(IntakeConstants.ON); }
+    /** Runs the transfer motor at full power while the subsystem is active. */
+    public void on(){
+        if (isActive()) transfer.setPower(IntakeConstants.ON);
+    }
 
     /** Stops the transfer motor. */
     public void off(){ transfer.setPower(IntakeConstants.OFF);}
 
-    /** Reverses the transfer motor. */
-    public void spit(){ transfer.setPower(IntakeConstants.SPIT); }
+    /** Reverses the transfer motor while the subsystem is active. */
+    public void spit(){
+        if (isActive()) transfer.setPower(IntakeConstants.SPIT);
+    }
 
-    /** Runs transfer motor when launching, not full power for consistency of shot */
+    /** Runs transfer motor when launching, not full power for consistency of shot. */
     public void launch() {
+        if (!isActive()) return;
         transfer.setPower(IntakeConstants.LAUNCH);
         gateUp();
     }
 
     /** Gate commands. */
-    public void gateUp(){ gate.setAngle(gate.getAxis().getMinDeg()); }
+    public void gateUp(){
+        if (isActive()) gate.setAngle(gate.getAxis().getMinDeg());
+    }
 
     public void gateDown(){ gate.setAngle(gate.getAxis().getMaxDeg()); }
 
@@ -101,12 +134,14 @@ public class TransferSubSystem extends Subsystem{
     public void startedLaunch(boolean set){ startedLaunch = set; }
     public void startedSpit(boolean set){ startedSpit = set; }
 
-    /** Stop intake if needed. */
-    public void interruptStop(){ resetState(); }
+    /** Stop the transfer state machine immediately. */
+    public void interruptStop(){ setActive(false); }
 
     /** Updates subsystem when active */
     @Override
     public void update(){
+        if (!isActive()) return;
+
         //updates sensor reads
         updateSensors();
 
@@ -151,7 +186,7 @@ public class TransferSubSystem extends Subsystem{
             if (getBallCount() != 0){
                 emptyTimer.reset();
             } else if (emptyTimer.milliseconds() > IntakeConstants.EMPTY_TIME) {
-                resetState();
+                setActive(false);
             }
 
             if(startedLaunch && timeoutTimer.milliseconds() > 2000 && !ball1Stuck){
@@ -200,25 +235,10 @@ public class TransferSubSystem extends Subsystem{
         startedSpit = false;
     }
 
-    /** Resets all booleans */
-    public void resetState(){
-        setActive(false);
-        off();
-        gateDown();
-
-        resetSensors();
-
-        resetIntaking();
-
-        resetLaunching();
-
-        resetSpitting();
-    }
-
-    /** Stops the intake motors.*/
+    /** Stops the transfer subsystem. */
     @Override
     public void stop() {
-        off();
+        setActive(false);
     }
 
     // ==========================================================

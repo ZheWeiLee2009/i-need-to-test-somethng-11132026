@@ -399,8 +399,14 @@ public class DriveSubSystem extends Subsystem {
         }
     }
 
+    /**
+     * Refreshes odometry only while active. setActive(false) pauses background
+     * localization updates but intentionally leaves direct motor commands available;
+     * this is useful for robot-centric drive, which does not need fresh odometry.
+     */
     @Override
     public void update(){
+        if (!isActive()) return;
         odo.update();
     }
 
