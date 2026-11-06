@@ -1,4 +1,3 @@
-
 package org.firstinspires.ftc.teamcode.OpModes;
 
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
@@ -261,6 +260,7 @@ public class MaxPracticeDrive extends OpMode {
         // Automatic shooting state machine or manual controls
         if (shooting) {
             double elapsed = shootTimer.milliseconds();
+            launcher.setActive(true);
             launcher.autoPIDF(local , target);
 
             if (elapsed < 400) {
@@ -384,4 +384,3 @@ public class MaxPracticeDrive extends OpMode {
         backRightDrive.setPower(maxSpeed * (backRightPower / maxPower));
     }
 }
-

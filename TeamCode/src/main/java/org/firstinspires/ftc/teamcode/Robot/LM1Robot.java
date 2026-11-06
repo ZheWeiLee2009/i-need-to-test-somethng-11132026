@@ -215,7 +215,7 @@ public class LM1Robot {
                 ServoConstants.Flower.MAX_DEG,
                 ServoConstants.Flower.AT_MIN,
                 ServoConstants.Flower.AT_MAX
-                );
+        );
 
         vision = new VisionSubSystem(limelight);
 
@@ -312,7 +312,10 @@ public class LM1Robot {
 
         rayCast.update(drive.getFieldX(), drive.getFieldY());
 
-        prepareShooter();
+        // Launcher is a normal subsystem: only runs while launcher.setActive(true).
+        if (launcher.isActive()) {
+            prepareShooter();
+        }
 
         if (debug) debug();
     }

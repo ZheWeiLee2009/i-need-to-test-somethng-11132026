@@ -15,6 +15,7 @@ import org.firstinspires.ftc.teamcode.Robot.LM1Robot;
  * gamepad1 right stick: turn (X axis)
  * gamepad1 X:           set target to TARGET_A (58.14, 59.5)
  * gamepad1 B:           set target to TARGET_B (58.14, 82.5)
+ * gamepad1 back:        toggle launcher on/off (starts ON when Start is pressed)
  *
  * The turret tracks the target automatically once the OpMode starts.
  */
@@ -37,6 +38,7 @@ public class DriveTargetTeleOp extends OpMode {
 
     @Override
     public void start() {
+        bot.launcher.setActive(true); // launcher only runs after Start is pressed
         bot.turret.setActive(true);
     }
 
@@ -49,6 +51,7 @@ public class DriveTargetTeleOp extends OpMode {
         if (gamepad1.yWasPressed()){ bot.drive.resetOdo();}
         if (gamepad1.xWasPressed()) currentTarget = TARGET_A;
         if (gamepad1.bWasPressed()) currentTarget = TARGET_B;
+        if (gamepad1.backWasPressed()) { bot.launcher.setActive(!bot.launcher.isActive()); }
 
         // bot.update() hands the turret LM1Robot's own (unset) target every loop, so set ours
         // afterwards and run the turret again with it.

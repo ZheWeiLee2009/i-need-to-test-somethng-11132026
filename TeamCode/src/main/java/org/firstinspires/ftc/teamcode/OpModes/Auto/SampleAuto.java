@@ -1,4 +1,3 @@
-
 package org.firstinspires.ftc.teamcode.OpModes.Auto;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -74,6 +73,7 @@ public class SampleAuto extends OpMode {
 
     @Override
     public void start() {
+        bot.launcher.setActive(true); // launcher only runs after Start is pressed
         // Move to Pedro's starting position before following the paths.
         follower.hold(CheckSucceed.startPose());
         state = AutoState.GO_TO_PATH_START;

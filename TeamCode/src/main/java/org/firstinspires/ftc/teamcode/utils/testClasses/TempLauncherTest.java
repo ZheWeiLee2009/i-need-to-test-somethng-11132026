@@ -259,6 +259,7 @@ public class TempLauncherTest extends OpMode {
 //        Pose2D local = new Pose2D(DistanceUnit.INCH, 0.0, 0.0, AngleUnit.DEGREES, 0.0);
 //        Pose2D target = new Pose2D(DistanceUnit.INCH, DISTANCE_IN, 0.0, AngleUnit.DEGREES, 0.0);
 
+        launcher.setActive(true);
         launcher.setRPM(fwLRpm, fwRRpm);
     }
 }

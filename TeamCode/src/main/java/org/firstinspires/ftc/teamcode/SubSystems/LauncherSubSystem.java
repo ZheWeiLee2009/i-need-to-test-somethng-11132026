@@ -46,6 +46,31 @@ public class LauncherSubSystem extends Subsystem {
     // LIFECYCLE (@Override)
     // ==========================================================
 
+    /**
+     * setActive(true): the controller runs (bang-bang -> PIDF toward the current target) and
+     * sends power on every update().
+     *
+     * <p>setActive(false): power is cut, the flywheel coasts (FLOAT), and the controller state
+     * and target are cleared. Nothing is maintained or sent while inactive.
+     */
+    @Override
+    public void setActive(boolean active) {
+        if (active) {
+            if (isActive()) return;
+            releaseBrake();
+            fwLBangBangActive = true;
+            fwRBangBangActive = true;
+            fwLpidf.reset();
+            fwRpidf.reset();
+            super.setActive(true);
+        } else {
+            fwL.setPower(0.0);
+            fwR.setPower(0.0);
+            releaseBrake();
+            resetState();
+        }
+    }
+
     @Override
     public void setup() {
         setMotorsMode(fwL, DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -81,6 +106,8 @@ public class LauncherSubSystem extends Subsystem {
      */
     @Override
     public void update() {
+        if (!isActive()) return;
+
 //        currentRPM = customMath.degPerSecToRPM(
 //                (fwL.getVelocity(AngleUnit.DEGREES)
 //                        + fwR.getVelocity(AngleUnit.DEGREES)) / 2.0
@@ -163,11 +190,7 @@ public class LauncherSubSystem extends Subsystem {
      * subsystem so no further encoder reads happen. Setting a new target resumes control.
      */
     public void off() {
-        fwL.setPower(0.0);
-        fwR.setPower(0.0);
-
-        releaseBrake();
-        resetState();
+        setActive(false);
     }
 
     /**
@@ -194,9 +217,8 @@ public class LauncherSubSystem extends Subsystem {
     /**
      * Sets the target RPM used by both manual and automatic modes.
      *
-     * <p>If the subsystem was off/stopped, this wakes it back up: the brake is released and the
-     * controller restarts in bang-bang with a clean PIDF, so the next update() reads the real
-     * flywheel speed and goes to the target from wherever it currently is.
+     * <p>This only sets the target. It does NOT activate the launcher: call setActive(true) for
+     * the controller to run. A target of 0 or less turns the launcher off.
      */
     private void setTargetRPM(double fwLRpm, double fwRRpm) {
         if (fwLRpm <= 0.0) {
@@ -209,17 +231,8 @@ public class LauncherSubSystem extends Subsystem {
             return;
         }
 
-        if (!isActive()) {
-            releaseBrake();
-            fwLBangBangActive = true;
-            fwRBangBangActive = true;
-            fwLpidf.reset();
-            fwRpidf.reset();
-            setActive(true);
-        } else {
-            if (Math.abs(fwLTargetRPM - fwLRpm) > 1.0) fwLpidf.reset();
-            if (Math.abs(fwRTargetRPM - fwRRpm) > 1.0) fwRpidf.reset();
-        }
+        if (Math.abs(fwLTargetRPM - fwLRpm) > 1.0) fwLpidf.reset();
+        if (Math.abs(fwRTargetRPM - fwRRpm) > 1.0) fwRpidf.reset();
 
         fwLTargetRPM = fwLRpm;
         fwRTargetRPM = fwRRpm;
@@ -361,6 +374,6 @@ public class LauncherSubSystem extends Subsystem {
         fwRBangBangActive = true;
         fwLpidf.reset();
         fwRpidf.reset();
-        setActive(false);
+        super.setActive(false);
     }
 }

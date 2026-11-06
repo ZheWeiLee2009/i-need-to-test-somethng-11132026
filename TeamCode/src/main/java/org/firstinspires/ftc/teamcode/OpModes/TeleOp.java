@@ -22,6 +22,7 @@ import org.firstinspires.ftc.teamcode.Robot.LM1Robot;
  * gamepad1 B:           intake on
  * gamepad1 A:           intake off
  * gamepad1 dpad up:     Limelight AprilTag scan (camera on for a short window only)
+ * gamepad1 back:        toggle launcher on/off (starts ON when Start is pressed)
  */
 @com.qualcomm.robotcore.eventloop.opmode.TeleOp(name = "TeleOp", group = ".")
 public class TeleOp extends OpMode {
@@ -40,6 +41,11 @@ public class TeleOp extends OpMode {
 
 
     @Override
+    public void start() {
+        bot.launcher.setActive(true); // launcher only runs after Start is pressed
+    }
+
+    @Override
     public void loop() {
         bot.update();
 
@@ -56,6 +62,7 @@ public class TeleOp extends OpMode {
         if(gamepad1.xWasPressed()){ bot.switchSide(); }
         if(gamepad1.dpadUpWasPressed()){ bot.startTagScan(); }
         if(gamepad1.yWasPressed()){ bot.drive.resetOdo(); }
+        if (gamepad1.backWasPressed()) { bot.launcher.setActive(!bot.launcher.isActive()); }
 
         if (gamepad1.dpad_down && !lastDpadDown) {
             bot.turret.setActive(!bot.turret.isActive());
