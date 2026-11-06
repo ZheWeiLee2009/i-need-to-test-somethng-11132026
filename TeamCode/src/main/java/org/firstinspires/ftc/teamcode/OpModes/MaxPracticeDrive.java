@@ -161,14 +161,17 @@ public class MaxPracticeDrive extends OpMode {
 
         pinpoint.resetPosAndIMU();
 
-        pinpoint.setPosition(new Pose2D(DistanceUnit.INCH, 6.5, 6, AngleUnit.DEGREES, 0));
-        local = pinpoint.getPosition();
+        // (6.5, 6) is a field-frame start (x right, y forward); convert to Pinpoint axes
+        // (x forward, y left) before seeding.
+        pinpoint.setPosition(customMath.fieldToPinpoint(
+                new Pose2D(DistanceUnit.INCH, 6.5, 6, AngleUnit.DEGREES, 0)));
+        local = customMath.pinpointToField(pinpoint.getPosition());
 
-        telemetry.addData("local x", local.getX(DistanceUnit.INCH));
-        telemetry.addData("local y", local.getY(DistanceUnit.INCH));
+        telemetry.addData("local x (field, right +)", local.getX(DistanceUnit.INCH));
+        telemetry.addData("local y (field, forward +)", local.getY(DistanceUnit.INCH));
 
-        telemetry.addData("pose x", pinpoint.getPosX(DistanceUnit.INCH));
-        telemetry.addData("pose y", pinpoint.getPosY(DistanceUnit.INCH));
+        telemetry.addData("pinpoint raw x (forward +)", pinpoint.getPosX(DistanceUnit.INCH));
+        telemetry.addData("pinpoint raw y (left +)", pinpoint.getPosY(DistanceUnit.INCH));
 
         telemetry.update();
 
@@ -189,11 +192,10 @@ public class MaxPracticeDrive extends OpMode {
         telemetry.addData("test value", testvalue);
 
         pinpoint.update();
-        local = new Pose2D(DistanceUnit.INCH, pinpoint.getPosX(DistanceUnit.INCH), pinpoint.getPosY(DistanceUnit.INCH), AngleUnit.DEGREES, 0);
-
-        // Access data
-        double x = pinpoint.getPosX(DistanceUnit.INCH);
-        double y = pinpoint.getPosY(DistanceUnit.INCH);
+        // Field frame (x right, y forward), converted from the Pinpoint's x-forward / y-left.
+        double x = customMath.pinpointToFieldX(pinpoint.getPosX(DistanceUnit.INCH), pinpoint.getPosY(DistanceUnit.INCH));
+        double y = customMath.pinpointToFieldY(pinpoint.getPosX(DistanceUnit.INCH), pinpoint.getPosY(DistanceUnit.INCH));
+        local = new Pose2D(DistanceUnit.INCH, x, y, AngleUnit.DEGREES, 0);
         double heading = pinpoint.getHeading(AngleUnit.DEGREES);
 
         telemetry.addData("X", x);

@@ -73,7 +73,38 @@ compile — don't call them in new code.
 - **lateral**: right (+) / left (-)
 - **yaw**: clockwise (+) / counterclockwise (-)
 - **heading**: radians, from `bot.odo.getHeading(AngleUnit.RADIANS)`. 0 = whatever direction the
-  robot was facing at the last `resetPosAndIMU()` / `setPosition()` call.
+  robot was facing at the last `resetPosAndIMU()` / `setPosition()` call. CCW-positive.
+
+### Field frame vs. raw Pinpoint frame
+
+The two coordinate systems in this project do **not** agree:
+
+| | +X | +Y | Heading |
+|---|---|---|---|
+| **Field frame** (targets, ray-cast zones, turret/launcher math, start poses; same x/y orientation as PedroPathing) | right | forward | CCW, 0 = facing +Y |
+| **goBILDA Pinpoint, raw** (`odo.getPosX/getPosY/getVelX/getVelY`) | forward | left | CCW, 0 = facing +X |
+
+Same origin, axes rotated 90°: `field.x = -pinpoint.y`, `field.y = pinpoint.x`; heading is identical
+(both mean "CCW from the way the robot faced at reset").
+
+**Rule: never read raw `odo.getPosX()/getPosY()/getVelX()/getVelY()` in field-frame code.** Use
+`DriveSubSystem`'s converters instead:
+
+| Method | Returns |
+|---|---|
+| `getFieldX()` / `getFieldY()` | position, inches, field frame |
+| `getFieldVelX()` / `getFieldVelY()` | velocity, in/s, field frame |
+| `getHeadingRad()` | heading, radians |
+| `getFieldPose()` | `Pose2D` in the field frame |
+| `setFieldPose(Pose2D)` | seeds the Pinpoint from a field-frame pose (converts axes for you) |
+
+The lower-level helpers live in `utils/customMath.java` (`pinpointToField`, `fieldToPinpoint`,
+`convertPose2D`/`convertPose` for PedroPathing `Pose`s — Pedro heading is measured from +X, so it is
+field heading + π/2).
+
+Pinpoint *configuration* (`setOffsets`, `setEncoderDirections`, `PinpointConfig` pod offsets) stays in
+the Pinpoint's own frame: x pod = forward-measuring pod, y pod = strafe-measuring pod, and offsets are
+x-pod-sideways / y-pod-forward as goBILDA defines them. Do not convert those.
 
 Gamepad sticks read **positive down and right**, so the standard mapping into `setFODDrive` is:
 
@@ -94,7 +125,8 @@ bot.drive.setFODDrive(y, x, rx, bot.odo.getHeading(AngleUnit.RADIANS), 1.0);
 stick is nearly centered (`Math.hypot(axial, lateral) < 0.1`) — otherwise they drive normally.
 When the stick is centered:
 
-1. Read the robot's current field-relative velocity from `odo` and rotate it into robot-relative
+1. Read the robot's current field-relative velocity (`getFieldVelX/Y`, already converted out of
+   the Pinpoint's x-forward / y-left axes) and rotate it into robot-relative
    `(robotAxial, robotLateral)`.
 2. If robot speed is **above** `VELOCITY_CUTOFF` **and** the driver is commanding yaw
    (`yaw > .01`): command a reverse power proportional to the current velocity

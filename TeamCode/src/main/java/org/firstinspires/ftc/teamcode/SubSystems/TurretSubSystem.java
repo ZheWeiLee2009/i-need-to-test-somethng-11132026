@@ -61,7 +61,11 @@ public class TurretSubSystem extends Subsystem {
 
     public Pose2D getTargetPose() { return targetPose; }
 
-    /** Updated by LM1Robot after the drivetrain/Pinpoint update each loop. */
+    /**
+     * Updated by LM1Robot after the drivetrain/Pinpoint update each loop. Must be a FIELD-frame
+     * pose (x right, y forward, heading CCW from forward) — use DriveSubSystem.getFieldPose(),
+     * not raw Pinpoint x/y (which are x-forward / y-left).
+     */
     public void setRobotPose(Pose2D robotPose) {
         this.robotPose = robotPose;
     }
@@ -87,7 +91,7 @@ public class TurretSubSystem extends Subsystem {
         if (!Double.isFinite(headingRad) || !Double.isFinite(pinX) || !Double.isFinite(pinY)) return;
 
         double offsetIn = PINPOINT_FORWARD_OF_TURRET_MM / MM_PER_INCH;
-        // With +Y forward at zero heading and CCW-positive heading:
+        // Field frame (x right, y forward): +Y forward at zero heading and CCW-positive heading:
         // robot-forward = (-sin(heading), cos(heading)).
         // Turret pivot is 20 mm backward from Pinpoint.
         double turretX = pinX + offsetIn * Math.sin(headingRad);
