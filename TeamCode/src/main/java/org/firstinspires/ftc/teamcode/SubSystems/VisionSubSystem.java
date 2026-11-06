@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.Configs.roboConfigs.VisionConstants;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -72,7 +73,8 @@ public class VisionSubSystem extends Subsystem {
             }
             if (!ids.isEmpty()) {
                 tagIds = ids;
-                if (VisionConstants.STOP_ON_FIRST_TAG) { stopScan(); return; }
+                stopScan();
+                return;
             }
         }
 
@@ -100,4 +102,6 @@ public class VisionSubSystem extends Subsystem {
 
     /** Seconds left in the scan window (0 when not scanning). */
     public double getTimeLeft() { return scanning ? Math.max(0, windowSeconds - scanTimer.seconds()) : 0; }
+
+    public boolean getTipped(){ return tagIds.size() < 3; }
 }

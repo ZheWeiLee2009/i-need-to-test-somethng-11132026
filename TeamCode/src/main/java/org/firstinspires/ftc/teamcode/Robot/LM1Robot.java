@@ -431,11 +431,13 @@ public class LM1Robot {
         joined.addData("Turret requested angle (deg): ", turret.getRawAimAngleDeg());
         joined.addData("Turret target clipped: ", turret.isAimTargetClipped());
         joined.addData("Flower Subsystem: ", flower.isActive());
+        joined.addLine();
 
         joined.addLine("Vision (AprilTags):");
         joined.addData("Limelight on: ", vision.isScanning());
         joined.addData("Scan time left (s): ", vision.getTimeLeft());
         joined.addData("Tag IDs: ", vision.getTagIds().toString());
+        joined.addData("Tipped: ", vision.getTipped() ? "TRUE" : "FALSE");
         joined.addLine();
 
         joined.addLine("Odo Position:");

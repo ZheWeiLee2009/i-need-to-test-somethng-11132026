@@ -55,12 +55,16 @@ public class TeleOp extends OpMode {
         if(gamepad1.aWasPressed()){ bot.startSpit(); }
         if(gamepad1.xWasPressed()){ bot.switchSide(); }
         if(gamepad1.dpadUpWasPressed()){ bot.startTagScan(); }
-        if(gamepad1.yWasPressed()){
-            bot.drive.resetOdo();
-        }
+        if(gamepad1.yWasPressed()){ bot.drive.resetOdo(); }
+
         if (gamepad1.dpad_down && !lastDpadDown) {
             bot.turret.setActive(!bot.turret.isActive());
         }
+
+        if (gamepad1.dpadUpWasPressed()) {
+            bot.startTagScan();
+        }
+
         if (!bot.turret.isActive()) {
             if (gamepad1.dpad_left && !lastDpadLeft) bot.turret.nudge(-5.0);
             if (gamepad1.dpad_right && !lastDpadRight) bot.turret.nudge(5.0);

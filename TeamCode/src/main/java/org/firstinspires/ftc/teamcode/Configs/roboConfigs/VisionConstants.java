@@ -18,5 +18,5 @@ public final class VisionConstants {
     public static final int POLL_HZ = 100;
 
     /** If true, the camera shuts off as soon as a tag is seen (instead of waiting out the window). */
-    public static final boolean STOP_ON_FIRST_TAG = true;
+    public static final boolean STOP_ON_FIRST_TAG = false;
 }
