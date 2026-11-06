@@ -6,6 +6,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.Robot.LM1Robot;
 
 /**
@@ -32,7 +34,7 @@ public class TeleOp extends OpMode {
     @Override
     public void init() {
         bot = new LM1Robot(hardwareMap, runtime, telemetry, blackboard);
-        bot.toggleDebug(true);
+        bot.setDebug(true);
     }
 
 
@@ -40,19 +42,20 @@ public class TeleOp extends OpMode {
     public void loop() {
         bot.update();
 
-        if (gamepad1.y) {bot.odo.resetPosAndIMU();} //reset
+//        if (gamepad1.y) {bot.odo.resetPosAndIMU();} //reset
 
         double y = -gamepad1.left_stick_y;
         double x = gamepad1.left_stick_x;
         double rx = gamepad1.right_stick_x;
-        double botHeading = bot.odo.getHeading(AngleUnit.RADIANS);
 
-        bot.setDrive(y, x, rx, botHeading, 1.0);
+        bot.setDrive(y, x, rx, 1.0);
 
         if(gamepad1.bWasPressed()){ bot.startIntaking(); }
         if(gamepad1.aWasPressed()){ bot.startSpit(); }
         if(gamepad1.xWasPressed()){ bot.switchSide(); }
-        if(gamepad1.yWasPressed()){ bot.odo.resetPosAndIMU(); }
+        if(gamepad1.yWasPressed()){
+            bot.drive.resetOdo();
+        }
         if (gamepad1.dpad_down && !lastDpadDown) {
             bot.turret.setActive(!bot.turret.isActive());
         }
@@ -71,23 +74,6 @@ public class TeleOp extends OpMode {
         } else {
             bot.flowerUp();
         }
-
-
-//        if(gamepad1.dpad_up){bot.odo.setPosition(new Pose2D(DistanceUnit.INCH,141.5/2,141.5/2,AngleUnit.RADIANS,0));}
-
-        // ---- Ray casting: check the robot's current field position ----
-
-//        telemetry.addData("Drive Mode", "Standard Field Oriented");
-//        telemetry.addData("Brake ","Standard Brake");
-//
-//        telemetry.addData("In Zone?", bot.rayCast.isInside());
-//        telemetry.addData("Zone(s)", bot.rayCast.getZoneIds());
-//
-//        telemetry.addData("Loop Time (ms)", runtime.milliseconds());
-//        telemetry.addData("Loop Time Odo (ms)", bot.odo.getLoopTime() * 0.001);
-//        telemetry.addData("Frequency (Hz)", bot.odo.getFrequency());
-
-//        telemetry.update();
 
         runtime.reset();
     }
