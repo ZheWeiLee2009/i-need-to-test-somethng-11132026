@@ -174,7 +174,7 @@ public class LM1Robot {
 
         odo = this.hwMap.get(GoBildaPinpointDriver.class, "pinpoint");
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
-        odo.setOffsets(-2.46, -5.32, DistanceUnit.INCH);
+        odo.setOffsets(-2.46, -4.46, DistanceUnit.INCH);
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odo.resetPosAndIMU();
         odo.recalibrateIMU();
