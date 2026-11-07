@@ -147,7 +147,7 @@ public class TurretSubSystem extends Subsystem {
     @Override
     public void setup() {
         setActive(false);
-        setAngle(180.0); // turret's forward-facing position
+        setAngle(0.0); // turret's forward-facing position
     }
 
     @Override

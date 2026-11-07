@@ -41,7 +41,8 @@ public class TeleOp extends OpMode {
 
     @Override
     public void init() {
-        bot = new LM1Robot(hardwareMap, runtime, telemetry, blackboard);
+        // false = don't reset odometry; keep the pose Auto left in the Pinpoint.
+        bot = new LM1Robot(hardwareMap, runtime, telemetry, blackboard, false);
         bot.setDebug(true);
     }
 

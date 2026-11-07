@@ -118,6 +118,17 @@ public class LM1Robot {
      */
     public LM1Robot(HardwareMap hwMap, ElapsedTime runtime, Telemetry telemetry,
                     Map<String, Object> blackboard) {
+        this(hwMap, runtime, telemetry, blackboard, true);
+    }
+
+    /**
+     * @param resetOdometry true (default for every other OpMode): zero the Pinpoint and IMU and seed
+     *                      the pose at the origin. false (TeleOp): leave the Pinpoint exactly as the
+     *                      last OpMode left it, so the pose carries over from Auto. Pinpoint settings
+     *                      (offsets, directions, resolution) are still applied either way.
+     */
+    public LM1Robot(HardwareMap hwMap, ElapsedTime runtime, Telemetry telemetry,
+                    Map<String, Object> blackboard, boolean resetOdometry) {
         this.time = runtime;
         this.hwMap = hwMap;
 
@@ -178,13 +189,15 @@ public class LM1Robot {
                 GoBildaPinpointDriver.EncoderDirection.FORWARD);
         odo.setOffsets(-2.46, -4.46, DistanceUnit.INCH);
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-        odo.resetPosAndIMU();
-        odo.recalibrateIMU();
+        if (resetOdometry) {
+            odo.resetPosAndIMU();
+            odo.recalibrateIMU();
 
-        // Pinpoint is x-forward / y-left; field code is x-right / y-forward. Seed through the
-        // converter, facing field +Y (heading pi/2).
-        odo.setPosition(customMath.fieldToPinpoint(
-                new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.RADIANS, Math.PI / 2)));
+            // Pinpoint is x-forward / y-left; field code is x-right / y-forward. Seed through the
+            // converter, facing field +Y (heading pi/2).
+            odo.setPosition(customMath.fieldToPinpoint(
+                    new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.RADIANS, Math.PI / 2)));
+        }
         odo.update();
 
         // ============================================================
