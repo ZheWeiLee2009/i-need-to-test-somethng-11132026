@@ -336,11 +336,11 @@ public class LauncherSubSystem extends Subsystem {
      * target. Always false while off/stopped.
      */
     public boolean isFwLAtTarget() {
-        return isActive() && Math.abs(fwLTargetRPM - fwLCurrentRPM) <= 75.0;
+        return isActive() && Math.abs(fwLTargetRPM - fwLCurrentRPM) <= 50.0;
     }
 
     public boolean isFwRAtTarget() {
-        return isActive() && Math.abs(fwRTargetRPM - fwRCurrentRPM) <= 75.0;
+        return isActive() && Math.abs(fwRTargetRPM - fwRCurrentRPM) <= 50.0;
     }
 
     public boolean isAtTarget(){

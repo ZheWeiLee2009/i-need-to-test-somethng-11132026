@@ -61,6 +61,8 @@ public class TeleOp extends OpMode {
 
 //        if (gamepad1.y) {bot.odo.resetPosAndIMU();} //reset
 
+        if (gamepad1.startWasPressed()) bot.toggleFOD();
+
         double y = -gamepad1.left_stick_y;
         double x = gamepad1.left_stick_x;
         double rx = gamepad1.right_stick_x;
@@ -71,10 +73,10 @@ public class TeleOp extends OpMode {
         if(gamepad1.aWasPressed()){ bot.startSpit(); }
         if(gamepad1.xWasPressed()){ bot.switchSide(); }
         if(gamepad1.yWasPressed()){ bot.drive.resetOdo(); }
-        if(gamepad2.dpadUpWasPressed()){ bot.drive.resetOdo(LEFT_X, TOP_Y); }
-        if(gamepad2.dpadRightWasPressed()){ bot.drive.resetOdo(RIGHT_X, TOP_Y); }
-        if(gamepad2.dpadDownWasPressed()){ bot.drive.resetOdo(RIGHT_X, BOTTOM_Y); }
-        if(gamepad2.dpadLeftWasPressed()){ bot.drive.resetOdo(LEFT_X, BOTTOM_Y); }
+        if(gamepad2.dpadUpWasPressed()){ bot.drive.resetOdo(LEFT_X, TOP_Y, 90); }
+        if(gamepad2.dpadRightWasPressed()){ bot.drive.resetOdo(RIGHT_X, TOP_Y,90 ); }
+        if(gamepad2.dpadDownWasPressed()){ bot.drive.resetOdo(RIGHT_X, BOTTOM_Y,90); }
+        if(gamepad2.dpadLeftWasPressed()){ bot.drive.resetOdo(LEFT_X, BOTTOM_Y,90); }
         if (gamepad1.backWasPressed()) { bot.launcher.setActive(!bot.launcher.isActive()); }
 
         if (gamepad1.dpad_down && !lastDpadDown) {
@@ -102,6 +104,10 @@ public class TeleOp extends OpMode {
         }
 
         runtime.reset();
+
+        if (bot.intake.isActive() && bot.intake.hasFour()){
+            gamepad1.rumble(200);
+        }
     }
 
     @Override

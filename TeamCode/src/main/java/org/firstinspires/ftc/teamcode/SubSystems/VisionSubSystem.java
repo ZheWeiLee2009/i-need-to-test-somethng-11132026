@@ -15,8 +15,9 @@ import java.util.List;
  * VISION — Limelight 3A AprilTag reader. One job: read which AprilTag IDs are visible.
  *
  * <p>Use {@link #setActive(boolean)} as the sole scan control. Activating starts the camera
- * and opens a scan window; deactivating stops the camera immediately. The scan also deactivates
- * itself when the window expires or when a tag is detected. The last IDs seen are retained.
+ * and opens a scan window; deactivating stops the camera immediately. The scan deactivates
+ * when the window expires, or on the first tag only when STOP_ON_FIRST_TAG is enabled. Distinct
+ * IDs seen during the scan are retained.
  */
 public class VisionSubSystem extends Subsystem {
     private final Limelight3A limelight;
@@ -43,7 +44,7 @@ public class VisionSubSystem extends Subsystem {
         if (active) {
             if (isActive()) return;
 
-            tagIds = Collections.emptyList();
+            tagIds = new ArrayList<>();
             scanTimer.reset();
             limelight.start();
             super.setActive(true);
@@ -53,19 +54,21 @@ public class VisionSubSystem extends Subsystem {
         }
     }
 
-    /** Polls the Limelight while active and closes the scan on a tag or timeout. */
+    /** Polls the Limelight while active, collects distinct IDs, and closes on configured stop or timeout. */
     @Override
     public void update() {
         if (!isActive()) return;
 
         LLResult result = limelight.getLatestResult();
         if (result != null && result.isValid()) {
-            List<Integer> ids = new ArrayList<>();
             for (LLResultTypes.FiducialResult fr : result.getFiducialResults()) {
-                ids.add(fr.getFiducialId());
+                int id = fr.getFiducialId();
+                if (!tagIds.contains(id)) {
+                    tagIds.add(id);
+                }
             }
-            if (!ids.isEmpty()) {
-                tagIds = ids;
+
+            if (VisionConstants.STOP_ON_FIRST_TAG && !tagIds.isEmpty()) {
                 setActive(false);
                 return;
             }
@@ -91,7 +94,7 @@ public class VisionSubSystem extends Subsystem {
     /** True if at least one tag was seen in the latest scan. */
     public boolean hasTag() { return !tagIds.isEmpty(); }
 
-    /** IDs seen in the latest scan (empty after activation until a tag is found). */
+    /** Distinct IDs seen during the latest scan (empty immediately after activation). */
     public List<Integer> getTagIds() { return tagIds; }
 
     /** First ID seen in the latest scan, or -1 if none. */

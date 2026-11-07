@@ -212,7 +212,7 @@ public class DriveSubSystem extends Subsystem {
      * @param speedMultiplier Global scaling factor
      */
     public void setFODDrive(double axial, double lateral, double yaw, double heading, double speedMultiplier) {
-        double[] rot = rotateByHeading(lateral, axial, heading);
+        double[] rot = rotateByHeading(lateral, axial, heading + Math.toRadians(90));
         double rotX = rot[0], rotY = rot[1];
         driveMecanum(rotY, rotX, yaw, speedMultiplier);
     }
@@ -379,13 +379,13 @@ public class DriveSubSystem extends Subsystem {
     }
 
     /** Reseeds odometry at a field-frame position (inches), facing +Y (Pedro heading 90 degrees). */
-    public void resetOdo(double fieldX, double fieldY){
-        setFieldPose(new Pose2D(DistanceUnit.INCH, fieldX, fieldY, AngleUnit.RADIANS, Math.toRadians(90)));
+    public void resetOdo(double fieldX, double fieldY, double degree){
+        setFieldPose(new Pose2D(DistanceUnit.INCH, fieldX, fieldY, AngleUnit.RADIANS, Math.toRadians(degree)));
         odo.update();
     }
 
     public void resetOdo(){
-        resetOdo(6, 6.5);
+        resetOdo(6, 6.5, 0);
     }
 
     /**

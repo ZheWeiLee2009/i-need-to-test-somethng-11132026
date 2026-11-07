@@ -26,6 +26,7 @@ public class TransferSubSystem extends Subsystem{
     private boolean startedIntake = false, startedLaunch = false, startedSpit = false;
     private boolean transferFull = false;
     private boolean ball1Stuck = false;
+    public boolean launchMax = false;
     private double gateAngle;
 
     public TransferSubSystem(List<DcMotorEx> Motors, List<Servo> Servos, List<DigitalChannel> Sensors){
@@ -53,21 +54,26 @@ public class TransferSubSystem extends Subsystem{
             timeoutTimer = new ElapsedTime();
     }
 
+    @Override
+    public void setActive(boolean active){ setActive(active, true); }
+
     /**
      * Enables or disables the transfer state machine.
      * Disabling it also stops the motor, lowers the gate, and clears pending operations.
+     * @param resetSensors false keeps the ball-sensor state (used when the transfer shuts itself off full)
      */
-    @Override
-    public void setActive(boolean active) {
+    public void setActive(boolean active, boolean resetSensors) {
         if (active) {
             super.setActive(true);
             return;
         }
 
         super.setActive(false);
+        if (resetSensors){
+            resetSensors();
+        }
         off();
         gateDown();
-        resetSensors();
         resetIntaking();
         resetLaunching();
         resetSpitting();
@@ -155,15 +161,15 @@ public class TransferSubSystem extends Subsystem{
         if (startedIntake && !spitRequest && !launchRequest){
             if (!(b1 && b2 && b3)){
                 settledTimer.reset();
-            } else if (settledTimer.milliseconds() > 300){
+            } else if (settledTimer.milliseconds() > IntakeConstants.SETTLE_TIME){
                 transferFull = true;
                 off();
             }
 
             if (getBallCount() != 4){
                 fullTimer.reset();
-            } else if (fullTimer.milliseconds() > 200 && transferFull){
-                setActive(false);
+            } else if (fullTimer.milliseconds() > IntakeConstants.SETTLE_TIME && transferFull){
+                setActive(false, false);
                 resetIntaking();
             }
         }
@@ -177,7 +183,8 @@ public class TransferSubSystem extends Subsystem{
         //launch if requested
         if (launchRequest && !startedLaunch){
             startedLaunch(true);
-            launch();
+            if (launchMax) on();
+            else launch();
             timeoutTimer.reset();
         }
 
@@ -189,11 +196,11 @@ public class TransferSubSystem extends Subsystem{
                 setActive(false);
             }
 
-            if(startedLaunch && timeoutTimer.milliseconds() > 2000 && !ball1Stuck){
+            if(startedLaunch && timeoutTimer.milliseconds() > 500 && !ball1Stuck){
                 spit();
                 ball1Stuck = true;
                 timeoutTimer.reset();
-            } else if (timeoutTimer.milliseconds() > 300 && ball1Stuck){
+            } else if (timeoutTimer.milliseconds() > 150 && ball1Stuck){
                 ball1Stuck = false;
                 launch();
             }

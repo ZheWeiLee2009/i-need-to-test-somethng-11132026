@@ -97,6 +97,7 @@ public class LM1Robot {
 
     //    private boolean autoShoot = true;
     private boolean isAudience = false;
+    private boolean isFOD = true;
     private boolean debug = false;
 
     // ---- poses ----
@@ -315,6 +316,9 @@ public class LM1Robot {
         // Launcher is a normal subsystem: only runs while launcher.setActive(true).
         if (launcher.isActive()) {
             prepareShooter();
+            // Far shots (> 50 in from the target) run the transfer at full power.
+            transfer.launchMax = customMath.poseToTranslation(drive.getFieldPose())
+                    .getDistance(customMath.poseToTranslation(target)) > 50;
         }
 
         if (debug) debug();
@@ -331,8 +335,11 @@ public class LM1Robot {
     // DRIVETRAIN
     // ==========================================================
 
+    public void toggleFOD(){ isFOD = !isFOD; }
+
     public void setDrive(double y, double x, double rx, double multiplier){
-        drive.setFODDrive(y, x, rx, local.getHeading(AngleUnit.RADIANS), multiplier);
+        if (isFOD) drive.setFODDrive(y, x, rx, local.getHeading(AngleUnit.RADIANS), multiplier);
+        else drive.setSTDDrive(y, x, rx, multiplier);
     }
 
     /** Current pose in the field frame, in inches and radians. */
@@ -374,8 +381,8 @@ public class LM1Robot {
 
     public void updateTarget(){
         //temporary
-        if (isAudience) target = new Pose2D(DistanceUnit.INCH, 64.5, 88, AngleUnit.DEGREES, 0.0);
-        else target = new Pose2D(DistanceUnit.INCH, 64.5, 63.5, AngleUnit.DEGREES, 0.0);
+        if (isAudience) target = new Pose2D(DistanceUnit.INCH, 58, 56, AngleUnit.DEGREES, 0.0);
+        else target = new Pose2D(DistanceUnit.INCH, 58, 84, AngleUnit.DEGREES, 0.0);
     }
 
     public void prepareShooter(){

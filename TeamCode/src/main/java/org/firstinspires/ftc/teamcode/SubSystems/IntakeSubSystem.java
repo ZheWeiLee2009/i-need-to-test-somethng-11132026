@@ -81,7 +81,7 @@ public class IntakeSubSystem extends Subsystem{
         if (startedIntake && !spitRequest && !launchRequest){
             if (ballCount != 4) {
                 settleTimer.reset();
-            } else if (settleTimer.milliseconds() > 200) {
+            } else if (settleTimer.milliseconds() > IntakeConstants.SETTLE_TIME) {
                 intakeRequest = false;
                 startedIntake = false;
                 setActive(false);
@@ -136,5 +136,7 @@ public class IntakeSubSystem extends Subsystem{
     // ==========================================================
     // GETTERS
     // ==========================================================
+
+    public boolean hasFour(){ return ballCount == 4 && settleTimer.milliseconds() > 200; }
 
 }
