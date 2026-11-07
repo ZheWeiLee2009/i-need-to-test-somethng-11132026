@@ -35,7 +35,7 @@ public class SampleAuto extends OpMode {
 
     // Add new path/action states here. Timed actions should call beginAction() when they start.
     private enum AutoState {
-        GO_TO_PATH_START, CHECK_TIPPED, PATH2, PATH3, PATH4, PATH5,
+        ALIGN_TO_PATH1_START, CHECK_TIPPED, PATH2, PATH3, PATH4, PATH5,
         WAIT_FOR_SHOT_READY, WAIT_FOR_SHOT_FINISH,
         DEPLOY_FLOWER, PATH6, RETRACT_FLOWER, PATH7, DONE, ABORTED
     }
@@ -53,6 +53,14 @@ public class SampleAuto extends OpMode {
     @Override
     public void init() {
         bot = new LM1Robot(hardwareMap, runtime, telemetry, blackboard);
+
+        bot.odo.resetPosAndIMU();
+        bot.setAutoSide(true); // turret/launcher target follows the ray-cast zone, like TeleOp's side switch
+
+        // Same switchSide() as TeleOp. The robot starts with the (58, 84) target, so one switch
+        // gives the (58, 56) target for the first shooting spot (end of PATH4). The target is
+        // switched back after that shot (see continueAfterCheckpoint, END_PATH4).
+        bot.switchSide();
 
         bot.drive.setActive(true);
         bot.intake.setActive(false);
@@ -97,23 +105,29 @@ public class SampleAuto extends OpMode {
         bot.launcher.setActive(false);
         bot.turret.setActive(true);
 
-        // Move to Pedro's starting position before the START shooting check.
-        follower.hold(CheckSucceed.startPose());
-        beginAction("Moving to start pose");
-        state = AutoState.GO_TO_PATH_START;
+        // Drive from the alignment pose to the PATH1 start point, then continue to PATH2.
+        follower.follow(CheckSucceed.alignmenttoPATH1Start());
+        beginAction("Following alignment to PATH1 start");
+        state = AutoState.ALIGN_TO_PATH1_START;
     }
 
     @Override
     public void loop() {
         follower.update();
         bot.update();
+        // Transfer only reads its sensors while active (and clears them when it shuts off),
+        // so read them every loop to keep getBallCount() valid.
+        bot.transfer.updateSensors();
 
         switch (state) {
-            case GO_TO_PATH_START:
-                if (atStartPose()) {
-                    follower.hold(follower.pose());
-                    // First conditional shot checkpoint: START.
-                    beginShotCheckpoint(ShootCheckpoint.START, true);
+            case ALIGN_TO_PATH1_START:
+                if (!follower.isBusy()) {
+                    follower.follow(CheckSucceed.path2());
+                    // Corner pickup: intake + transfer on (only starts when the robot is empty).
+                    // They shut themselves off once 4 balls are loaded.
+                    bot.startIntaking();
+                    beginAction("Following PATH2; intaking");
+                    state = AutoState.PATH2;
                 }
                 break;
 
@@ -150,7 +164,10 @@ public class SampleAuto extends OpMode {
             case PATH3:
                 if (!follower.isBusy()) {
                     follower.follow(CheckSucceed.path4());
-                    beginAction("Following PATH4");
+                    // Leave the corner: start spinning the flywheels now so they are at speed on
+                    // arrival. Intake keeps running (until full) to finish loading on the way.
+                    bot.launcher.setActive(true);
+                    beginAction("Following PATH4; launcher spinning up");
                     state = AutoState.PATH4;
                 }
                 break;
@@ -176,7 +193,6 @@ public class SampleAuto extends OpMode {
                 bot.transfer.updateSensors();
 
                 if (bot.transfer.getBallCount() == 0) {
-                    bot.launcher.setActive(false);
                     actionStatus = checkpoint + ": no ball detected; skipping shot";
                     continueAfterCheckpoint();
                 } else if (isShooterReady()) {
@@ -207,7 +223,8 @@ public class SampleAuto extends OpMode {
             case DEPLOY_FLOWER:
                 if (actionTimer.milliseconds() >= FLOWER_SETTLE_TIME_MS) {
                     follower.follow(CheckSucceed.path6());
-                    beginAction("Following PATH6; flower deployed");
+                    bot.startIntaking();   // flower pickup (only starts when the robot is empty)
+                    beginAction("Following PATH6; flower deployed, intaking");
                     state = AutoState.PATH6;
                 }
                 break;
@@ -281,6 +298,11 @@ public class SampleAuto extends OpMode {
         checkTippedBeforeShot = checkTipped;
         launchRequested = false;
 
+        // Arrived: stop any intake still running. Sensors are re-read at the top of loop().
+        if (bot.intake.isActive() || bot.transfer.isActive()) {
+            bot.interruptStop();
+        }
+
         if (checkTippedBeforeShot) {
             bot.vision.setActive(true);
             beginAction("Scanning AprilTags at " + checkpoint);
@@ -295,7 +317,6 @@ public class SampleAuto extends OpMode {
         bot.transfer.updateSensors();
 
         if (bot.transfer.getBallCount() == 0) {
-            bot.launcher.setActive(false);
             actionStatus = checkpoint + ": no ball detected; skipping shot";
             continueAfterCheckpoint();
             return;
@@ -319,6 +340,9 @@ public class SampleAuto extends OpMode {
                 break;
 
             case END_PATH4:
+                // Leaving the first shooting spot: switch the turret/launcher target back to
+                // (58, 84) for the shots at the end of PATH5 and PATH6 (same as TeleOp's switchSide).
+                bot.switchSide();
                 follower.follow(CheckSucceed.path5());
                 beginAction("Following PATH5");
                 state = AutoState.PATH5;
@@ -404,6 +428,9 @@ public class SampleAuto extends OpMode {
         telemetry.addData("Pedro Y", "%.2f", current.y());
         telemetry.addData("Pedro Heading", "%.2f",
                 Math.toDegrees(current.heading()));
+
+        telemetry.addData("Ray-cast zone", bot.rayCast.getZoneIds());
+        telemetry.addData("Target goal", bot.isAudience() ? "CLOSER (58, 56)" : "FURTHER (58, 84)");
 
         telemetry.addLine("=== BOT.ODO LOCALIZATION (FIELD FRAME) ===");
         telemetry.addData("Odo X (right +)", "%.2f", bot.drive.getFieldX());

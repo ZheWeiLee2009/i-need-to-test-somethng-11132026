@@ -98,6 +98,7 @@ public class LM1Robot {
     //    private boolean autoShoot = true;
     private boolean isAudience = false;
     private boolean isFOD = true;
+    private boolean autoSide = false;
     private boolean debug = false;
 
     // ---- poses ----
@@ -187,7 +188,8 @@ public class LM1Robot {
         odo = this.hwMap.get(GoBildaPinpointDriver.class, "pinpoint");
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED,
                 GoBildaPinpointDriver.EncoderDirection.FORWARD);
-        odo.setOffsets(-2.46, -4.46, DistanceUnit.INCH);
+        // Same values as Configs/pedroPathing/Constants.java localizerConfig (Pedro's config is the source of truth).
+        odo.setOffsets(2.2626519390917204, -4.462394714355469, DistanceUnit.INCH);
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         if (resetOdometry) {
             odo.resetPosAndIMU();
@@ -325,13 +327,13 @@ public class LM1Robot {
         }
 
         rayCast.update(drive.getFieldX(), drive.getFieldY());
+        if (autoSide) updateSideFromZone();
 
         // Launcher is a normal subsystem: only runs while launcher.setActive(true).
         if (launcher.isActive()) {
             prepareShooter();
             // Far shots (> 50 in from the target) run the transfer at full power.
-            transfer.launchMax = customMath.poseToTranslation(drive.getFieldPose())
-                    .getDistance(customMath.poseToTranslation(target)) > 50;
+            transfer.launchMax = true;
         }
 
         if (debug) debug();
@@ -391,6 +393,34 @@ public class LM1Robot {
         isAudience = !isAudience;
         updateTarget();
     }
+
+    /**
+     * When enabled (Auto), the scoring target is chosen from the ray-cast zone the robot is in,
+     * instead of by the driver pressing the side-switch button. Off by default (TeleOp).
+     */
+    public void setAutoSide(boolean enabled){ autoSide = enabled; }
+
+    /**
+     * Picks the target from the ray-cast zone, ignoring alliance and starting side:
+     * below the field midline (redGarden zone) -> the closer goal (58, 56);
+     * above the midline (blueGarden zone)      -> the further goal (58, 84).
+     * These are the same two targets as {@link #switchSide()} (isAudience = closer goal).
+     * Outside every zone the current target is kept.
+     */
+    private void updateSideFromZone(){
+        List<String> zones = rayCast.getZoneIds();
+        boolean wantAudience;
+        if (zones.contains("redGarden")) wantAudience = true;          // below midline: closer goal
+        else if (zones.contains("blueGarden")) wantAudience = false;   // above midline: further goal
+        else return;
+
+        if (wantAudience != isAudience){
+            isAudience = wantAudience;
+            updateTarget();
+        }
+    }
+
+    public boolean isAudience(){ return isAudience; }
 
     public void updateTarget(){
         //temporary

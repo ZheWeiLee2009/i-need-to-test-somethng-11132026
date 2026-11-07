@@ -12,21 +12,22 @@ public class CheckSucceed {
     private static final PoseFactory poseFactory = PoseFactory.degrees();
 
     private static final Pose start = poseFactory.of(6, 6.5, 90);
-    private static final Pose alignmenttoPATH1Start = poseFactory.of(41.75, 8, 270);
-    private static final Pose point2Start = poseFactory.of(41.75, 8, 270);
+    private static final Pose alignmenttoPATH1Start = poseFactory.of(55.4964, 8.3783, 270);
+    private static final Pose point2Start = poseFactory.of(55.4964, 8.3783, 270);
     private static final Pose point2 = poseFactory.of(7, 18.2619, 270);
     private static final Pose point3Start = poseFactory.of(7, 18.2619, 270);
-    private static final Pose point3 = poseFactory.of(7, 7, 270);
-    private static final Pose point4 = poseFactory.of(30.0593, 26.844, 430);
-    private static final Pose point4Control1 = poseFactory.of(13.6657, 19.1955, 0);
-    private static final Pose point4Segment1Heading = poseFactory.of(30.0593, 26.844, 270);
-    private static final Pose point4Segment2Start = poseFactory.of(30.0593, 26.844, 270);
-    private static final Pose point4Segment2End = poseFactory.of(30.0593, 26.844, 70);
-    private static final Pose point5Start = poseFactory.of(30.0593, 26.844, 90);
-    private static final Pose point5 = poseFactory.of(46.0791, 114.883, 75);
-    private static final Pose point5Control1 = poseFactory.of(27.5615, 111.2366, 0);
-    private static final Pose point6 = poseFactory.of(46.2618, 127.2593, 89.1545);
-    private static final Pose point7 = poseFactory.of(13.5384, 115.5533, 19.6835);
+    private static final Pose point3 = poseFactory.of(6.8739, 6.7478, 270);
+    private static final Pose point4 = poseFactory.of(36.2388, 21.6734, 430);
+    private static final Pose point4Control1 = poseFactory.of(12.0262, 25.5012, 0);
+    private static final Pose point4Segment1Heading = poseFactory.of(36.2388, 21.6734, 270);
+    private static final Pose point4Segment2Start = poseFactory.of(36.2388, 21.6734, 270);
+    private static final Pose point4Segment2End = poseFactory.of(36.2388, 21.6734, 70);
+    private static final Pose point5Start = poseFactory.of(36.2388, 21.6734, 90);
+    private static final Pose point5 = poseFactory.of(47.8447, 116.7747, 75);
+    private static final Pose point5Control1 = poseFactory.of(25.1653, 84.3743, 0);
+    private static final Pose point6 = poseFactory.of(48.0274, 124.64, 88.8198);
+    private static final Pose point7Start = poseFactory.of(48.0274, 124.64, 90);
+    private static final Pose point7 = poseFactory.of(13.2862, 116.0578, 0);
 
     public static Pose startPose() {
         return start;
@@ -57,6 +58,6 @@ public class CheckSucceed {
     }
 
     public static Path path7() {
-        return Paths.line(point6, point7).reverseTangent();
+        return Paths.line(point7Start, point7).linear(point7Start, point7);
     }
 }

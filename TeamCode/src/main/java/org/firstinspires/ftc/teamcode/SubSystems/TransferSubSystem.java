@@ -27,6 +27,7 @@ public class TransferSubSystem extends Subsystem{
     private boolean transferFull = false;
     private boolean ball1Stuck = false;
     public boolean launchMax = false;
+    private int lastLaunchCount = -1;
     private double gateAngle;
 
     public TransferSubSystem(List<DcMotorEx> Motors, List<Servo> Servos, List<DigitalChannel> Sensors){
@@ -48,10 +49,10 @@ public class TransferSubSystem extends Subsystem{
                 Gate.AT_MIN,
                 Gate.AT_MAX);
 
-            emptyTimer = new ElapsedTime();
-            settledTimer = new ElapsedTime();
-            fullTimer = new ElapsedTime();
-            timeoutTimer = new ElapsedTime();
+        emptyTimer = new ElapsedTime();
+        settledTimer = new ElapsedTime();
+        fullTimer = new ElapsedTime();
+        timeoutTimer = new ElapsedTime();
     }
 
     @Override
@@ -107,6 +108,16 @@ public class TransferSubSystem extends Subsystem{
         if (!isActive()) return;
         transfer.setPower(IntakeConstants.LAUNCH);
         gateUp();
+    }
+
+    /** Starts/resumes launching: full power if launchMax, otherwise normal launch power. The gate always opens. */
+    private void runLaunch(){
+        if (launchMax){
+            on();
+            gateUp();
+        } else {
+            launch();
+        }
     }
 
     /** Gate commands. */
@@ -183,9 +194,9 @@ public class TransferSubSystem extends Subsystem{
         //launch if requested
         if (launchRequest && !startedLaunch){
             startedLaunch(true);
-            if (launchMax) on();
-            else launch();
+            runLaunch();
             timeoutTimer.reset();
+            lastLaunchCount = getBallCount();
         }
 
         //stops once empty
@@ -196,23 +207,32 @@ public class TransferSubSystem extends Subsystem{
                 setActive(false);
             }
 
-            if(startedLaunch && timeoutTimer.milliseconds() > 500 && !ball1Stuck){
-                spit();
-                ball1Stuck = true;
-                timeoutTimer.reset();
-            } else if (timeoutTimer.milliseconds() > 150 && ball1Stuck){
-                ball1Stuck = false;
-                launch();
+            if (startedLaunch){
+                int count = getBallCount();
+                if (count != lastLaunchCount){       // a ball moved, so the transfer is not stuck
+                    lastLaunchCount = count;
+                    timeoutTimer.reset();
+                }
+
+                if (timeoutTimer.milliseconds() > 500 && !ball1Stuck){
+                    spit();
+                    ball1Stuck = true;
+                    timeoutTimer.reset();
+                } else if (timeoutTimer.milliseconds() > 150 && ball1Stuck){
+                    ball1Stuck = false;
+                    runLaunch();   // resume at the same power, gate stays up
+                    timeoutTimer.reset();
+                }
             }
         }
     }
 
     /** Reads intake sensors. */
     public void updateSensors(){
-            b1 = l1.getState() || r1.getState();
-            b2 = l2.getState() || r2.getState();
-            b3 = l3.getState() || r3.getState();
-            b4 = l4.getState() || r4.getState();
+        b1 = l1.getState() || r1.getState();
+        b2 = l2.getState() || r2.getState();
+        b3 = l3.getState() || r3.getState();
+        b4 = l4.getState() || r4.getState();
     }
 
     /** Reset sensor values. */

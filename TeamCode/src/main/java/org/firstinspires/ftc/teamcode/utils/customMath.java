@@ -107,57 +107,48 @@ public class customMath {
     // ------------------------------------------------------------
     // COORDINATE FRAMES
     //
-    //  goBILDA Pinpoint (raw):  +X = robot forward at start, +Y = LEFT,
-    //                           heading CCW-positive, 0 = facing +X.
-    //  FIELD frame (this code): +X = RIGHT, +Y = FORWARD,
-    //                           heading CCW-positive, 0 = facing +X (Pedro), 90 deg = +Y.
-    //                           Targets, ray-cast zones, start poses and the
-    //                           turret/launcher math all live in this frame, and it is
-    //                           the same x/y orientation PedroPathing uses.
+    //  The goBILDA Pinpoint is driven by PedroPathing, which seeds and reads it directly in
+    //  Pedro field coordinates (x right, y forward, heading CCW-positive, 0 = facing +X,
+    //  90 deg = facing +Y). So the raw Pinpoint frame IS the Pedro field frame, and the
+    //  FIELD frame used by this code (targets, ray-cast zones, start poses, turret and
+    //  launcher math) is that same frame.
     //
-    //  Same origin, axes rotated 90 degrees:
-    //      field.x = -pinpoint.y        pinpoint.x = field.y
-    //      field.y =  pinpoint.x        pinpoint.y = -field.x
-    //      field.heading = pinpoint.heading + pi/2     pinpoint.heading = field.heading - pi/2
-    //
-    //  Never feed raw odo.getPosX()/getPosY()/getVelX()/getVelY() into field-frame code;
-    //  go through these helpers (DriveSubSystem.getFieldPose() etc. wrap them).
+    //  The helpers below are therefore pass-throughs. They are kept so every caller still
+    //  goes through one place; do NOT add axis swaps or heading offsets here, or this code
+    //  will disagree with Pedro (and with the pose Auto leaves in the Pinpoint for TeleOp).
     // ------------------------------------------------------------
 
-    /** Pinpoint (x fwd, y left) -> field X (right). */
+    /** Pinpoint X -> field X (same frame). */
     public static double pinpointToFieldX(double pinpointX, double pinpointY) {
-        return -pinpointY;
-    }
-
-    /** Pinpoint (x fwd, y left) -> field Y (forward). */
-    public static double pinpointToFieldY(double pinpointX, double pinpointY) {
         return pinpointX;
     }
 
-    /** Pinpoint heading (0 = forward at reset) -> field heading (Pedro: 0 = +X, pi/2 = +Y). */
+    /** Pinpoint Y -> field Y (same frame). */
+    public static double pinpointToFieldY(double pinpointX, double pinpointY) {
+        return pinpointY;
+    }
+
+    /** Pinpoint heading -> field heading (same frame; only normalized). */
     public static double pinpointToFieldHeading(double pinpointHeading) {
-        return AngleUnit.normalizeRadians(pinpointHeading + Math.PI / 2.0);
+        return AngleUnit.normalizeRadians(pinpointHeading);
     }
 
-    /** Field heading (Pedro: 0 = +X, pi/2 = +Y) -> Pinpoint heading (0 = forward at reset). */
+    /** Field heading -> Pinpoint heading (same frame; only normalized). */
     public static double fieldToPinpointHeading(double fieldHeading) {
-        return AngleUnit.normalizeRadians(fieldHeading - Math.PI / 2.0);
+        return AngleUnit.normalizeRadians(fieldHeading);
     }
 
-    /** Field (x right, y fwd) -> Pinpoint X (forward). */
+    /** Field X -> Pinpoint X (same frame). */
     public static double fieldToPinpointX(double fieldX, double fieldY) {
+        return fieldX;
+    }
+
+    /** Field Y -> Pinpoint Y (same frame). */
+    public static double fieldToPinpointY(double fieldX, double fieldY) {
         return fieldY;
     }
 
-    /** Field (x right, y fwd) -> Pinpoint Y (left). */
-    public static double fieldToPinpointY(double fieldX, double fieldY) {
-        return -fieldX;
-    }
-
-    /**
-     * Converts a raw Pinpoint pose (x forward, y left) to a field-frame pose (x right, y forward).
-     * Works for positions in any distance unit; the unit is preserved.
-     */
+    /** Raw Pinpoint pose -> field-frame pose. Same frame, so only the units are normalized. */
     public static Pose2D pinpointToField(Pose2D pinpointPose) {
         DistanceUnit u = DistanceUnit.INCH;
         double px = pinpointPose.getX(u);
@@ -169,10 +160,7 @@ public class customMath {
                 pinpointToFieldHeading(pinpointPose.getHeading(AngleUnit.RADIANS)));
     }
 
-    /**
-     * Converts a field-frame pose (x right, y forward) to the raw Pinpoint frame
-     * (x forward, y left). Use this before calling {@code odo.setPosition(...)}.
-     */
+    /** Field-frame pose -> raw Pinpoint pose, for {@code odo.setPosition(...)}. Same frame. */
     public static Pose2D fieldToPinpoint(Pose2D fieldPose) {
         DistanceUnit u = DistanceUnit.INCH;
         double fx = fieldPose.getX(u);

@@ -78,10 +78,10 @@ public class DriveSubSystem extends Subsystem {
     // ==========================================================
     // ODOMETRY — FIELD-FRAME ACCESSORS
     //
-    // The Pinpoint reports x = forward, y = LEFT. Everything else in this project (targets,
-    // ray-cast zones, turret aiming, start poses) uses the field frame: x = RIGHT, y = FORWARD
-    // (same orientation as PedroPathing). Read and seed odometry ONLY through these methods so
-    // the axes are converted in exactly one place. Heading is offset by 90 degrees (Pedro: 0 = +X).
+    // The Pinpoint is driven by PedroPathing, so its raw pose is already in the Pedro field frame
+    // (x = right, y = forward, heading 0 = +X, CCW-positive). Everything in this project (targets,
+    // ray-cast zones, turret aiming, start poses) uses that same frame. Read and seed odometry ONLY
+    // through these methods so any future conversion lives in customMath, in exactly one place.
     // ==========================================================
 
     /** Robot X in the field frame (+right), inches. */

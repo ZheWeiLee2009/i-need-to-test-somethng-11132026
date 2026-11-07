@@ -82,17 +82,21 @@ public class LauncherSubSystem extends Subsystem {
 
         // Distance (inches) -> RPM
         leftFlywheelLut.add(38.0, 2275.0); //right is 2200
-        leftFlywheelLut.add(40.5, 2250.0); //right is 2250
-        leftFlywheelLut.add(43.5, 2200.0); //right is 2300
-        leftFlywheelLut.add(52.0, 2225.0); //right is 2450
-        leftFlywheelLut.add(55.0, 2250.0); //right is 2450
+        leftFlywheelLut.add(40.5, 2300); //right is 2250
+        leftFlywheelLut.add(44.5, 2315.0); //right is 2300
+        leftFlywheelLut.add(47,2330.0);
+        leftFlywheelLut.add(50,2360);
+        leftFlywheelLut.add(52.0, 2380.0); //right is 2450
+        leftFlywheelLut.add(55.0, 2420.0); //right is 2450
         leftFlywheelLut.createLUT();
 
         rightFlywheelLut.add(38.0, 2200.0); //right is 2200
-        rightFlywheelLut.add(40.5, 2250.0); //right is 2250
-        rightFlywheelLut.add(43.5, 2300.0); //right is 2300
+        rightFlywheelLut.add(40.5, 2315); //right is 2250
+        rightFlywheelLut.add(44.5, 2370.0); //right is 2300
+        rightFlywheelLut.add(47,2400);
+        rightFlywheelLut.add(50,2420);
         rightFlywheelLut.add(52.0, 2450.0); //right is 2450
-        rightFlywheelLut.add(55.0, 2450.0); //right is 2450
+        rightFlywheelLut.add(55.0, 2480.0); //right is 2450
         rightFlywheelLut.createLUT();
 
         off();
