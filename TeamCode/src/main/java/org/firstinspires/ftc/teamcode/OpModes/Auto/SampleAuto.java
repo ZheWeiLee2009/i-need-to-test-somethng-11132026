@@ -26,10 +26,12 @@ public class SampleAuto extends OpMode {
     private static final double POSITION_TOLERANCE = 1.0;
     private static final double HEADING_TOLERANCE_DEG = 5.0;
     private static final double PATH4_PIECEWISE_SPLIT = 0.4680851064;
+    private static final double PATH_TIMEOUT_MS = 6000.0;
     private static final double VISION_SCAN_TIMEOUT_MS = 3500.0;
     private static final double SHOT_READY_TIMEOUT_MS = 8000.0;
     private static final double SHOT_FINISH_TIMEOUT_MS = 7000.0;
     private static final double FLOWER_SETTLE_TIME_MS = 350.0;
+    private static final double PATH6_SHOT_DELAY_MS = 1500.0;
     private static final double TURRET_AIM_TOLERANCE_DEG = 5.0;
     private static final double TURRET_SETTLE_TIME_MS = 250.0;
 
@@ -121,13 +123,10 @@ public class SampleAuto extends OpMode {
 
         switch (state) {
             case ALIGN_TO_PATH1_START:
-                if (!follower.isBusy()) {
-                    follower.follow(CheckSucceed.path2());
-                    // Corner pickup: intake + transfer on (only starts when the robot is empty).
-                    // They shut themselves off once 4 balls are loaded.
-                    bot.startIntaking();
-                    beginAction("Following PATH2; intaking");
-                    state = AutoState.PATH2;
+                if (pathFinished()) {
+                    follower.hold(follower.pose());
+                    // First shot: hold at the PATH1 start alignment point before shooting.
+                    beginShotCheckpoint(ShootCheckpoint.START, false);
                 }
                 break;
 
@@ -154,7 +153,7 @@ public class SampleAuto extends OpMode {
                 break;
 
             case PATH2:
-                if (!follower.isBusy()) {
+                if (pathFinished()) {
                     follower.follow(CheckSucceed.path3());
                     beginAction("Following PATH3");
                     state = AutoState.PATH3;
@@ -162,7 +161,7 @@ public class SampleAuto extends OpMode {
                 break;
 
             case PATH3:
-                if (!follower.isBusy()) {
+                if (pathFinished()) {
                     follower.follow(CheckSucceed.path4());
                     // Leave the corner: start spinning the flywheels now so they are at speed on
                     // arrival. Intake keeps running (until full) to finish loading on the way.
@@ -173,17 +172,17 @@ public class SampleAuto extends OpMode {
                 break;
 
             case PATH4:
-                if (!follower.isBusy()) {
+                if (pathFinished()) {
                     follower.hold(follower.pose());
-                    // Second conditional shot checkpoint: end of PATH4.
+                    // Second shot: only shoot if the AprilTag scan detects at least 3 distinct tags.
                     beginShotCheckpoint(ShootCheckpoint.END_PATH4, true);
                 }
                 break;
 
             case PATH5:
-                if (!follower.isBusy()) {
+                if (pathFinished()) {
                     follower.hold(follower.pose());
-                    // Unconditional shot checkpoint: end of PATH5.
+                    // Third shot: unconditional shot at the end of PATH5.
                     beginShotCheckpoint(ShootCheckpoint.END_PATH5, false);
                 }
                 break;
@@ -203,10 +202,10 @@ public class SampleAuto extends OpMode {
                         beginAction("Shooting at " + checkpoint + "; waiting for transfer and intake");
                         state = AutoState.WAIT_FOR_SHOT_FINISH;
                     } else {
-                        abortShot("Launch request was not accepted at " + checkpoint);
+                        skipShot("Launch request was not accepted at " + checkpoint);
                     }
                 } else if (actionTimer.milliseconds() >= SHOT_READY_TIMEOUT_MS) {
-                    abortShot("Turret/launcher readiness timed out at " + checkpoint);
+                    skipShot("Turret/launcher readiness timed out at " + checkpoint);
                 }
                 break;
 
@@ -216,7 +215,7 @@ public class SampleAuto extends OpMode {
                     actionStatus = checkpoint + ": shot finished";
                     continueAfterCheckpoint();
                 } else if (actionTimer.milliseconds() >= SHOT_FINISH_TIMEOUT_MS) {
-                    abortShot("Shooting did not finish before timeout at " + checkpoint);
+                    skipShot("Shooting did not finish before timeout at " + checkpoint);
                 }
                 break;
 
@@ -230,7 +229,7 @@ public class SampleAuto extends OpMode {
                 break;
 
             case PATH6:
-                if (!follower.isBusy()) {
+                if (pathFinished()) {
                     follower.hold(follower.pose());
                     bot.flowerUp();
                     beginAction("Retracting flower after PATH6");
@@ -239,14 +238,14 @@ public class SampleAuto extends OpMode {
                 break;
 
             case RETRACT_FLOWER:
-                if (actionTimer.milliseconds() >= FLOWER_SETTLE_TIME_MS) {
-                    // Unconditional shot checkpoint: end of PATH6, after the flower retracts.
+                if (actionTimer.milliseconds() >= PATH6_SHOT_DELAY_MS) {
+                    // Fourth shot: wait 1.5 seconds after PATH6 while the flower retracts.
                     beginShotCheckpoint(ShootCheckpoint.END_PATH6, false);
                 }
                 break;
 
             case PATH7:
-                if (!follower.isBusy()) {
+                if (pathFinished()) {
                     bot.launcher.setActive(false);
                     bot.turret.setActive(false);
                     actionStatus = "Complete";
@@ -277,6 +276,11 @@ public class SampleAuto extends OpMode {
         telemetry.addData("Turret Target Clipped", bot.turret.isAimTargetClipped());
         telemetry.addData("Launcher Active", bot.launcher.isActive());
         telemetry.addData("Launcher At Target", bot.launcher.isAtTarget());
+        telemetry.addData("Launcher L cur/tgt", "%.0f / %.0f",
+                bot.launcher.getFwLCurrentRPM(), bot.launcher.getFwLTargetRPM());
+        telemetry.addData("Launcher R cur/tgt", "%.0f / %.0f",
+                bot.launcher.getFwRCurrentRPM(), bot.launcher.getFwRTargetRPM());
+        telemetry.addData("Last launch", bot.lastLaunchInfo);
         telemetry.addData("Transfer Active", bot.transfer.isActive());
         telemetry.addData("Intake Active", bot.intake.isActive());
 
@@ -290,6 +294,11 @@ public class SampleAuto extends OpMode {
 
         addLocalizationTelemetry();
         telemetry.update();
+    }
+
+    // A path step is done when Pedro finishes it, or when it has taken too long.
+    private boolean pathFinished() {
+        return !follower.isBusy() || actionTimer.milliseconds() >= PATH_TIMEOUT_MS;
     }
 
     // Start a fresh tipped scan for a conditional shot, or prepare the unconditional shot directly.
@@ -335,7 +344,10 @@ public class SampleAuto extends OpMode {
         switch (checkpoint) {
             case START:
                 follower.follow(CheckSucceed.path2());
-                beginAction("Following PATH2");
+                // Corner pickup: intake + transfer on (only starts when the robot is empty).
+                // They shut themselves off once 4 balls are loaded.
+                bot.startIntaking();
+                beginAction("Following PATH2; intaking");
                 state = AutoState.PATH2;
                 break;
 
@@ -382,17 +394,13 @@ public class SampleAuto extends OpMode {
         actionTimer.reset();
     }
 
-    // Stop the shooting mechanisms and hold position if a launch check or timeout fails.
-    private void abortShot(String reason) {
+    // Stop the feed and move on to the next path/action if a launch check or timeout fails.
+    private void skipShot(String reason) {
         bot.interruptStop();
-        bot.launcher.setActive(false);
-        bot.turret.setActive(false);
         bot.vision.setActive(false);
-        bot.flowerUp();
-        follower.hold(follower.pose());
         launchRequested = false;
-        actionStatus = "ABORTED: " + reason;
-        state = AutoState.ABORTED;
+        continueAfterCheckpoint();
+        actionStatus = "SKIPPED: " + reason; // set after, so it isn't overwritten by beginAction()
     }
 
     // Check whether Pedro has reached the hold target.

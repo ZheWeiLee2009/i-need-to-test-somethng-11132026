@@ -62,6 +62,12 @@ public class LauncherConstants {
     @Sorter(sort = 9)
     public static double BANG_BANG_EXIT_RPM = 400.0;
 
+    /** Both flywheels must stay inside the at-target tolerance continuously for this long (ms)
+     *  before isAtTarget() reports ready. Stops a shot being fed while the wheels are only
+     *  passing through the target on the way up (or ringing around it). */
+    @Sorter(sort = 11)
+    public static double AT_TARGET_STABLE_MS = 0.0;
+
     @Sorter(sort = 10)
     public static double fwLRpm = 1800;
 

@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.Configs.roboConfigs.LauncherConstan
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.controller.PIDFController;
 import com.seattlesolvers.solverslib.util.InterpLUT;
 
@@ -32,6 +33,9 @@ public class LauncherSubSystem extends Subsystem {
 
     /** True while the motors are held in BRAKE by stop(); off()/resume restore FLOAT. */
     private boolean braked = false;
+
+    /** Time since either flywheel was last outside the at-target tolerance. */
+    private final ElapsedTime stableTimer = new ElapsedTime();
 
     /** Optional overrides (used by test OpModes). NaN = fall back to LauncherConstants. */
     private double enterOverrideRpm = Double.NaN;
@@ -124,6 +128,11 @@ public class LauncherSubSystem extends Subsystem {
         double fwLAbsError = Math.abs(fwLError);
         double fwRError = fwRTargetRPM - fwRCurrentRPM;
         double fwRAbsError = Math.abs(fwRError);
+
+        // Restart the stability window whenever either wheel leaves the tolerance band.
+        if (fwLAbsError > AT_TARGET_TOLERANCE_RPM || fwRAbsError > AT_TARGET_TOLERANCE_RPM) {
+            stableTimer.reset();
+        }
 
         double enterRpm = Double.isNaN(enterOverrideRpm) ? BANG_BANG_ENTER_RPM : enterOverrideRpm;
         double exitRpm = Double.isNaN(exitOverrideRpm) ? BANG_BANG_EXIT_RPM : exitOverrideRpm;
@@ -340,20 +349,27 @@ public class LauncherSubSystem extends Subsystem {
      * target. Always false while off/stopped.
      */
     public boolean isFwLAtTarget() {
-        return isActive() && Math.abs(fwLTargetRPM - fwLCurrentRPM) <= 50.0;
+        return isActive() && Math.abs(fwLTargetRPM - fwLCurrentRPM) <= AT_TARGET_TOLERANCE_RPM;
     }
 
     public boolean isFwRAtTarget() {
-        return isActive() && Math.abs(fwRTargetRPM - fwRCurrentRPM) <= 50.0;
+        return isActive() && Math.abs(fwRTargetRPM - fwRCurrentRPM) <= AT_TARGET_TOLERANCE_RPM;
     }
 
+    /**
+     * Shot-ready gate: both flywheels within tolerance of their targets AND they have stayed
+     * there for AT_TARGET_STABLE_MS. (isFwLAtTarget/isFwRAtTarget stay instantaneous.)
+     */
     public boolean isAtTarget(){
-        return isFwLAtTarget() && isFwRAtTarget();
+        return isFwLAtTarget() && isFwRAtTarget()
+                && stableTimer.milliseconds() >= AT_TARGET_STABLE_MS;
     }
 
     // ==========================================================
     // INTERNAL HELPERS
     // ==========================================================
+
+    private static final double AT_TARGET_TOLERANCE_RPM = 50.0;
 
     /** Restores FLOAT on both motors if stop() had put them in BRAKE. */
     private void releaseBrake() {
@@ -378,6 +394,7 @@ public class LauncherSubSystem extends Subsystem {
         fwRBangBangActive = true;
         fwLpidf.reset();
         fwRpidf.reset();
+        stableTimer.reset();
         super.setActive(false);
     }
 }

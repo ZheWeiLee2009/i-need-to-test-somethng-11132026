@@ -332,8 +332,9 @@ public class LM1Robot {
         // Launcher is a normal subsystem: only runs while launcher.setActive(true).
         if (launcher.isActive()) {
             prepareShooter();
-            // Far shots (> 50 in from the target) run the transfer at full power.
-            transfer.launchMax = true;
+            // Feed at normal LAUNCH power (0.75), matching how the RPM table was tuned.
+            // TEMP: was unconditionally true (full power feed); re-enable only for far shots if needed.
+            transfer.launchMax = false;
         }
 
         if (debug) debug();
@@ -459,10 +460,24 @@ public class LM1Robot {
 
 //    public void toggleAutoShoot(boolean set){ autoShoot = set; }
 
+    /** What the launcher looked like the instant a shot was accepted (for diagnosing misses). */
+    public String lastLaunchInfo = "none yet";
+
     public void launch(){
         boolean ready = /*Math.abs(local.getX(DistanceUnit.INCH) - lastLocal.getX(DistanceUnit.INCH)) < 0.5
                 && Math.abs(local.getY(DistanceUnit.INCH) - lastLocal.getY(DistanceUnit.INCH)) < 0.5
                 && rayCast.isInside() &&*/ launcher.isAtTarget() && transfer.getBallCount() > 0;
+        if (ready && !transfer.isActive()) {
+            double dist = customMath.poseToTranslation(getFieldPose())
+                    .getDistance(customMath.poseToTranslation(target));
+            lastLaunchInfo = String.format(
+                    "dist %.1f in | L tgt %.0f cur %.0f | R tgt %.0f cur %.0f | out %.2f/%.2f | pose %.1f,%.1f",
+                    dist,
+                    launcher.getFwLTargetRPM(), launcher.getFwLCurrentRPM(),
+                    launcher.getFwRTargetRPM(), launcher.getFwRCurrentRPM(),
+                    launcher.getFwLOutput(), launcher.getFwROutput(),
+                    drive.getFieldX(), drive.getFieldY());
+        }
         intake.launchRequest(ready);
         transfer.launchRequest(ready);
     }
@@ -527,6 +542,7 @@ public class LM1Robot {
         joined.addLine("Launcher RPM");
         joined.addData("fwL: ", launcher.getFwLCurrentRPM());
         joined.addData("fwR: ", launcher.getFwRCurrentRPM());
+        joined.addData("Last launch: ", lastLaunchInfo);
 
         joined.update();
     }
