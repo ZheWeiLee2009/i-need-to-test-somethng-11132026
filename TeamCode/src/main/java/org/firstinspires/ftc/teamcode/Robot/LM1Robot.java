@@ -181,9 +181,9 @@ public class LM1Robot {
         odo.recalibrateIMU();
 
         // Pinpoint is x-forward / y-left; field code is x-right / y-forward. Seed through the
-        // converter (origin + heading 0 are identical in both frames, but keep it uniform).
+        // converter, facing field +Y (heading pi/2).
         odo.setPosition(customMath.fieldToPinpoint(
-                new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.RADIANS, 0)));
+                new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.RADIANS, Math.PI / 2)));
         odo.update();
 
         // ============================================================
@@ -335,14 +335,10 @@ public class LM1Robot {
         drive.setFODDrive(y, x, rx, local.getHeading(AngleUnit.RADIANS), multiplier);
     }
 
-    /** Current Pinpoint pose, in inches and radians. */
+    /** Current pose in the field frame, in inches and radians. */
     private void updatePinpointPose() {
         lastLocal = local;
-        local =  new Pose2D(DistanceUnit.INCH,
-                odo.getPosX(DistanceUnit.INCH),
-                odo.getPosY(DistanceUnit.INCH),
-                AngleUnit.RADIANS,
-                odo.getHeading(AngleUnit.RADIANS));
+        local = drive.getFieldPose();
     }
 
 

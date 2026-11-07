@@ -110,7 +110,7 @@ public class customMath {
     //  goBILDA Pinpoint (raw):  +X = robot forward at start, +Y = LEFT,
     //                           heading CCW-positive, 0 = facing +X.
     //  FIELD frame (this code): +X = RIGHT, +Y = FORWARD,
-    //                           heading CCW-positive, 0 = facing +Y.
+    //                           heading CCW-positive, 0 = facing +X (Pedro), 90 deg = +Y.
     //                           Targets, ray-cast zones, start poses and the
     //                           turret/launcher math all live in this frame, and it is
     //                           the same x/y orientation PedroPathing uses.
@@ -118,7 +118,7 @@ public class customMath {
     //  Same origin, axes rotated 90 degrees:
     //      field.x = -pinpoint.y        pinpoint.x = field.y
     //      field.y =  pinpoint.x        pinpoint.y = -field.x
-    //      field.heading = pinpoint.heading   (both are "CCW from the robot's start direction")
+    //      field.heading = pinpoint.heading + pi/2     pinpoint.heading = field.heading - pi/2
     //
     //  Never feed raw odo.getPosX()/getPosY()/getVelX()/getVelY() into field-frame code;
     //  go through these helpers (DriveSubSystem.getFieldPose() etc. wrap them).
@@ -134,6 +134,16 @@ public class customMath {
         return pinpointX;
     }
 
+    /** Pinpoint heading (0 = forward at reset) -> field heading (Pedro: 0 = +X, pi/2 = +Y). */
+    public static double pinpointToFieldHeading(double pinpointHeading) {
+        return AngleUnit.normalizeRadians(pinpointHeading + Math.PI / 2.0);
+    }
+
+    /** Field heading (Pedro: 0 = +X, pi/2 = +Y) -> Pinpoint heading (0 = forward at reset). */
+    public static double fieldToPinpointHeading(double fieldHeading) {
+        return AngleUnit.normalizeRadians(fieldHeading - Math.PI / 2.0);
+    }
+
     /** Field (x right, y fwd) -> Pinpoint X (forward). */
     public static double fieldToPinpointX(double fieldX, double fieldY) {
         return fieldY;
@@ -146,7 +156,7 @@ public class customMath {
 
     /**
      * Converts a raw Pinpoint pose (x forward, y left) to a field-frame pose (x right, y forward).
-     * Works for positions in any distance unit; the unit is preserved. Heading is unchanged.
+     * Works for positions in any distance unit; the unit is preserved.
      */
     public static Pose2D pinpointToField(Pose2D pinpointPose) {
         DistanceUnit u = DistanceUnit.INCH;
@@ -156,7 +166,7 @@ public class customMath {
                 pinpointToFieldX(px, py),
                 pinpointToFieldY(px, py),
                 AngleUnit.RADIANS,
-                pinpointPose.getHeading(AngleUnit.RADIANS));
+                pinpointToFieldHeading(pinpointPose.getHeading(AngleUnit.RADIANS)));
     }
 
     /**
@@ -171,12 +181,12 @@ public class customMath {
                 fieldToPinpointX(fx, fy),
                 fieldToPinpointY(fx, fy),
                 AngleUnit.RADIANS,
-                fieldPose.getHeading(AngleUnit.RADIANS));
+                fieldToPinpointHeading(fieldPose.getHeading(AngleUnit.RADIANS)));
     }
 
     /**
-     * Converts a field-frame FTC Pose2D (x right, y forward, heading 0 = +Y) to a PedroPathing
-     * Pose. Pedro measures heading from +X, so facing field-forward (+Y) is PI/2.
+     * Converts a field-frame FTC Pose2D (x right, y forward, Pedro heading) to a PedroPathing
+     * Pose. Both use the same axes and heading, so only the type changes.
      *
      * <p>For a raw Pinpoint pose, call {@link #pinpointToField(Pose2D)} first.
      *
@@ -187,12 +197,12 @@ public class customMath {
         return new Pose(
                 pose.getX(DistanceUnit.INCH),
                 pose.getY(DistanceUnit.INCH),
-                AngleUnit.normalizeRadians(pose.getHeading(AngleUnit.RADIANS) + Math.PI / 2.0));
+                pose.getHeading(AngleUnit.RADIANS));
     }
 
     /**
      * Converts a PedroPathing Pose to a field-frame FTC Pose2D (x right, y forward,
-     * heading 0 = +Y). Inverse of {@link #convertPose2D(Pose2D)}.
+     * Pedro heading). Inverse of {@link #convertPose2D(Pose2D)}.
      *
      * <p>To seed the Pinpoint with the result, pass it through
      * {@link #fieldToPinpoint(Pose2D)}.
@@ -206,7 +216,7 @@ public class customMath {
                 pose.x(),
                 pose.y(),
                 AngleUnit.RADIANS,
-                AngleUnit.normalizeRadians(pose.heading() - Math.PI / 2.0));
+                pose.heading());
     }
 
     /**

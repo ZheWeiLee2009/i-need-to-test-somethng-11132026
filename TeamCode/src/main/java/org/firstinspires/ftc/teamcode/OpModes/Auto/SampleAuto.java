@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode.OpModes.Auto;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Configs.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.Configs.pedroPathing.autoPaths.CheckSucceed;
 import org.firstinspires.ftc.teamcode.Robot.LM1Robot;
@@ -178,13 +176,10 @@ public class SampleAuto extends OpMode {
         telemetry.addData("Pedro Heading", "%.2f",
                 Math.toDegrees(current.heading()));
 
-        telemetry.addLine("=== BOT.ODO LOCALIZATION ===");
-        telemetry.addData("Odo X", "%.2f",
-                bot.odo.getPosX(DistanceUnit.INCH));
-        telemetry.addData("Odo Y", "%.2f",
-                bot.odo.getPosY(DistanceUnit.INCH));
-        telemetry.addData("Odo Heading", "%.2f",
-                Math.toDegrees(bot.odo.getHeading(AngleUnit.RADIANS)));
+        telemetry.addLine("=== BOT.ODO LOCALIZATION (FIELD FRAME) ===");
+        telemetry.addData("Odo X (right +)", "%.2f", bot.drive.getFieldX());
+        telemetry.addData("Odo Y (forward +)", "%.2f", bot.drive.getFieldY());
+        telemetry.addData("Odo Heading", "%.2f", Math.toDegrees(bot.drive.getHeadingRad()));
     }
 
     @Override

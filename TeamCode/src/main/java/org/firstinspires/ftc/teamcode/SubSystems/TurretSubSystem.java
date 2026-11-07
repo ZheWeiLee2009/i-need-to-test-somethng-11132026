@@ -63,7 +63,7 @@ public class TurretSubSystem extends Subsystem {
 
     /**
      * Updated by LM1Robot after the drivetrain/Pinpoint update each loop. Must be a FIELD-frame
-     * pose (x right, y forward, heading CCW from forward) — use DriveSubSystem.getFieldPose(),
+     * pose (x right, y forward, Pedro heading: CCW from +X) — use DriveSubSystem.getFieldPose(),
      * not raw Pinpoint x/y (which are x-forward / y-left).
      */
     public void setRobotPose(Pose2D robotPose) {
@@ -91,21 +91,20 @@ public class TurretSubSystem extends Subsystem {
         if (!Double.isFinite(headingRad) || !Double.isFinite(pinX) || !Double.isFinite(pinY)) return;
 
         double offsetIn = PINPOINT_FORWARD_OF_TURRET_MM / MM_PER_INCH;
-        // Field frame (x right, y forward): +Y forward at zero heading and CCW-positive heading:
-        // robot-forward = (-sin(heading), cos(heading)).
+        // Field frame (x right, y forward), Pedro heading (0 = +X, CCW-positive):
+        // robot-forward = (cos(heading), sin(heading)).
         // Turret pivot is 20 mm backward from Pinpoint.
-        double turretX = pinX + offsetIn * Math.sin(headingRad);
-        double turretY = pinY - offsetIn * Math.cos(headingRad);
+        double turretX = pinX - offsetIn * Math.cos(headingRad);
+        double turretY = pinY - offsetIn * Math.sin(headingRad);
 
         double dx = targetPose.getX(DistanceUnit.INCH) - turretX;
         double dy = targetPose.getY(DistanceUnit.INCH) - turretY;
         double distance = Math.hypot(dx, dy);
         if (!Double.isFinite(distance) || distance < MIN_TARGET_DISTANCE_IN) return;
 
-        // Bearing is clockwise from field-forward. Add CCW-positive robot heading to get
-        // clockwise bearing relative to robot-forward. 180 degrees is turret-forward.
-        double worldBearingClockwiseDeg = Math.toDegrees(Math.atan2(dx, dy));
-        double relativeBearingClockwiseDeg = worldBearingClockwiseDeg + Math.toDegrees(headingRad);
+        // Clockwise bearing relative to robot-forward = heading - bearing (both CCW from +X).
+        // 180 degrees is turret-forward.
+        double relativeBearingClockwiseDeg = Math.toDegrees(headingRad - Math.atan2(dy, dx));
         rawAimAngleDeg = 180.0 + relativeBearingClockwiseDeg + AIM_OFFSET_DEG;
         if (!Double.isFinite(rawAimAngleDeg)) return;
 

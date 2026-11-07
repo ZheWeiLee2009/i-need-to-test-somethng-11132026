@@ -56,7 +56,7 @@ public class FOTeleOpDrive extends OpMode {
         double y = -gamepad1.left_stick_y;
         double x = gamepad1.left_stick_x;
         double rx = -gamepad1.right_stick_x;
-        double botHeading = bot.odo.getHeading(AngleUnit.RADIANS);
+        double botHeading = bot.drive.getHeadingRad();
 
         bot.drive.setFODDrive(y, x, rx, botHeading, 1.0);
 
@@ -64,7 +64,7 @@ public class FOTeleOpDrive extends OpMode {
         if(gamepad1.a){bot.intake.off();}
 
         // Field-frame pose (x right, y forward); setFieldPose converts to the Pinpoint's axes.
-        if(gamepad1.dpad_up){bot.drive.setFieldPose(new Pose2D(DistanceUnit.INCH,141.5/2,141.5/2,AngleUnit.RADIANS,0));}
+        if(gamepad1.dpad_up){bot.drive.setFieldPose(new Pose2D(DistanceUnit.INCH,141.5/2,141.5/2,AngleUnit.RADIANS,Math.PI/2));}
 
         // ---- Ray casting: check the robot's current field position ----
         double robotX = bot.drive.getFieldX();

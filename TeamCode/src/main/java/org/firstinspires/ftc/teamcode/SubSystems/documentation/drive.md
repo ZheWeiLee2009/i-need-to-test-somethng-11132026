@@ -74,8 +74,8 @@ compile — don't call them in new code.
 - **axial**: forward (+) / backward (-)
 - **lateral**: right (+) / left (-)
 - **yaw**: clockwise (+) / counterclockwise (-)
-- **heading**: radians, from `bot.odo.getHeading(AngleUnit.RADIANS)`. 0 = whatever direction the
-  robot was facing at the last `resetPosAndIMU()` / `setPosition()` call. CCW-positive.
+- **heading**: radians, from `bot.drive.getHeadingRad()`. Pedro convention: 0 = facing +X,
+  π/2 = facing +Y (up the field). CCW-positive.
 
 ### Field frame vs. raw Pinpoint frame
 
@@ -83,11 +83,11 @@ The two coordinate systems in this project do **not** agree:
 
 | | +X | +Y | Heading |
 |---|---|---|---|
-| **Field frame** (targets, ray-cast zones, turret/launcher math, start poses; same x/y orientation as PedroPathing) | right | forward | CCW, 0 = facing +Y |
+| **Field frame** (targets, ray-cast zones, turret/launcher math, start poses; same x/y orientation as PedroPathing) | right | forward | CCW, 0 = facing +X (Pedro), 90° = +Y |
 | **goBILDA Pinpoint, raw** (`odo.getPosX/getPosY/getVelX/getVelY`) | forward | left | CCW, 0 = facing +X |
 
-Same origin, axes rotated 90°: `field.x = -pinpoint.y`, `field.y = pinpoint.x`; heading is identical
-(both mean "CCW from the way the robot faced at reset").
+Same origin, axes rotated 90°: `field.x = -pinpoint.y`, `field.y = pinpoint.x`; field heading = pinpoint
+heading + π/2 (Pedro: 0 = +X, π/2 = +Y).
 
 **Rule: never read raw `odo.getPosX()/getPosY()/getVelX()/getVelY()` in field-frame code.** Use
 `DriveSubSystem`'s converters instead:
@@ -114,7 +114,7 @@ Gamepad sticks read **positive down and right**, so the standard mapping into `s
 double y  = -gamepad1.left_stick_y;   // up on the stick = positive axial
 double x  =  gamepad1.left_stick_x;
 double rx = -gamepad1.right_stick_x;
-bot.drive.setFODDrive(y, x, rx, bot.odo.getHeading(AngleUnit.RADIANS), 1.0);
+bot.drive.setFODDrive(y, x, rx, bot.drive.getHeadingRad(), 1.0);
 ```
 
 (This is exactly what `FOTeleOpDrive` does.)

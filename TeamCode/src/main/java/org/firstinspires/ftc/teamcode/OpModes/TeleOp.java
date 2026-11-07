@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.OpModes;
 
 
+import static org.firstinspires.ftc.teamcode.utils.customMath.FTC_FIELD_SIZE_IN;
+
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -17,6 +19,8 @@ import org.firstinspires.ftc.teamcode.Robot.LM1Robot;
  * gamepad1 left stick:  drive (field-oriented, forward/strafe)
  * gamepad1 right stick: turn (X axis)
  * gamepad1 Y:           reset heading / pose (call when facing a known field direction)
+ * gamepad2 dpad:        reset pose to a field corner (up = top-left, right = top-right,
+ *                       down = bottom-right, left = bottom-left)
  * gamepad1 dpad down:   toggle turret field-pose tracking active/inactive
  * gamepad1 dpad left/right: manually nudge turret when tracking is inactive
  * gamepad1 B:           intake on
@@ -31,6 +35,8 @@ public class TeleOp extends OpMode {
     private boolean lastDpadDown = false;
     private boolean lastDpadLeft = false;
     private boolean lastDpadRight = false;
+    private static final double LEFT_X = 6, RIGHT_X = FTC_FIELD_SIZE_IN - 6;
+    private static final double BOTTOM_Y = 6.5, TOP_Y = FTC_FIELD_SIZE_IN - 6.5;
 
 
     @Override
@@ -42,6 +48,10 @@ public class TeleOp extends OpMode {
 
     @Override
     public void start() {
+        bot.drive.setActive(true);
+        bot.intake.setActive(true);
+        bot.transfer.setActive(true);
+        bot.flower.setActive(true);
         bot.launcher.setActive(true); // launcher only runs after Start is pressed
     }
 
@@ -61,6 +71,10 @@ public class TeleOp extends OpMode {
         if(gamepad1.aWasPressed()){ bot.startSpit(); }
         if(gamepad1.xWasPressed()){ bot.switchSide(); }
         if(gamepad1.yWasPressed()){ bot.drive.resetOdo(); }
+        if(gamepad2.dpadUpWasPressed()){ bot.drive.resetOdo(LEFT_X, TOP_Y); }
+        if(gamepad2.dpadRightWasPressed()){ bot.drive.resetOdo(RIGHT_X, TOP_Y); }
+        if(gamepad2.dpadDownWasPressed()){ bot.drive.resetOdo(RIGHT_X, BOTTOM_Y); }
+        if(gamepad2.dpadLeftWasPressed()){ bot.drive.resetOdo(LEFT_X, BOTTOM_Y); }
         if (gamepad1.backWasPressed()) { bot.launcher.setActive(!bot.launcher.isActive()); }
 
         if (gamepad1.dpad_down && !lastDpadDown) {

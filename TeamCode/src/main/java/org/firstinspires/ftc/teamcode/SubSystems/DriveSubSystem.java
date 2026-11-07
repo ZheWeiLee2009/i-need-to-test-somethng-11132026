@@ -81,7 +81,7 @@ public class DriveSubSystem extends Subsystem {
     // The Pinpoint reports x = forward, y = LEFT. Everything else in this project (targets,
     // ray-cast zones, turret aiming, start poses) uses the field frame: x = RIGHT, y = FORWARD
     // (same orientation as PedroPathing). Read and seed odometry ONLY through these methods so
-    // the axes are converted in exactly one place. Heading is the same in both frames.
+    // the axes are converted in exactly one place. Heading is offset by 90 degrees (Pedro: 0 = +X).
     // ==========================================================
 
     /** Robot X in the field frame (+right), inches. */
@@ -94,9 +94,9 @@ public class DriveSubSystem extends Subsystem {
         return customMath.pinpointToFieldY(odo.getPosX(DistanceUnit.INCH), odo.getPosY(DistanceUnit.INCH));
     }
 
-    /** Robot heading in radians, CCW-positive, 0 = the direction the robot faced at reset. */
+    /** Robot heading in radians, Pedro convention: CCW-positive, 0 = facing +X, pi/2 = facing +Y. */
     public double getHeadingRad() {
-        return odo.getHeading(AngleUnit.RADIANS);
+        return customMath.pinpointToFieldHeading(odo.getHeading(AngleUnit.RADIANS));
     }
 
     /** Robot velocity along field X (+right), inches/second. */
@@ -143,16 +143,16 @@ public class DriveSubSystem extends Subsystem {
     }
 
     /**
-     * Rotates the 2D FIELD-frame vector (x = right, y = forward) by -heading (radians) into
-     * the robot frame. Returns {robotRight, robotForward}. Both field-relative joystick input
+     * Rotates the 2D FIELD-frame vector (x = right, y = forward) into the robot frame, given a
+     * Pedro-convention heading (radians, 0 = +X, pi/2 = +Y). Returns {robotRight, robotForward}. Both field-relative joystick input
      * (heading = robot heading) and a field-relative velocity vector (for the instant-stop
      * brake, via getFieldVelX/Y) go through this same rotation.
      *
      * <p>Do NOT pass raw Pinpoint x/y here — they are x-forward / y-left. Convert first.
      */
     private static double[] rotateByHeading(double x, double y, double heading) {
-        double cos = Math.cos(-heading);
-        double sin = Math.sin(-heading);
+        double cos = Math.cos(Math.PI / 2.0 - heading);
+        double sin = Math.sin(Math.PI / 2.0 - heading);
         return new double[] { x * cos - y * sin, x * sin + y * cos };
     }
 
@@ -350,9 +350,8 @@ public class DriveSubSystem extends Subsystem {
         double dx = target.getX() - getFieldX();
         double dy = target.getY() - getFieldY();
 
-        // Bearing of the target measured CCW from field-forward (+Y), to match the heading
-        // convention (0 = forward, CCW-positive). Vector2d.angle() would be measured from +X.
-        double bearing = Math.atan2(-dx, dy);
+        // Bearing of the target measured CCW from +X, matching the Pedro heading convention.
+        double bearing = Math.atan2(dy, dx);
         return AngleUnit.normalizeRadians(bearing - getHeadingRad());
     }
 
@@ -379,9 +378,14 @@ public class DriveSubSystem extends Subsystem {
         return Math.max(-MAX_TURN_VELOCITY, Math.min(MAX_TURN_VELOCITY, output));
     }
 
-    public void resetOdo(){
-        odo.setPosition(new Pose2D(DistanceUnit.INCH, 6, 6.5, AngleUnit.RADIANS, Math.toRadians(90)));
+    /** Reseeds odometry at a field-frame position (inches), facing +Y (Pedro heading 90 degrees). */
+    public void resetOdo(double fieldX, double fieldY){
+        setFieldPose(new Pose2D(DistanceUnit.INCH, fieldX, fieldY, AngleUnit.RADIANS, Math.toRadians(90)));
         odo.update();
+    }
+
+    public void resetOdo(){
+        resetOdo(6, 6.5);
     }
 
     /**

@@ -96,7 +96,7 @@ public class AutoDriveByRandomDir extends OpMode {
         }
 
         // Telemetry reporting
-        Pose2D pose = bot.odo.getPosition();
+        Pose2D pose = bot.drive.getFieldPose();
         telemetry.addData("Current State", currentState);
         telemetry.addData("Runtime (s)", bot.time.seconds());
         telemetry.addData("State Time (s)", stateTimer.seconds());
